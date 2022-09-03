@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="main.css">
+	<link rel="stylesheet" type="text/css" href="mantenimientos.css">
+	<title>Nuevo mantenimiento</title>
+</head>
+<body>
+	<div class="container">
+		<form>
+			<h1>Registrar nuevo mantenimiento</h1>
+			<fieldset>
+				<legend>Fecha</legend>
+				<input type="date" name="date">
+			</fieldset>
+			<fieldset>
+				<legend>Estado</legend>
+				<input type="radio" name="status" value="Programmed" id="programmed"><label for="programmed">Programado</label><br>
+				<input type="radio" name="status" value="Done" id="done"><label for="done">Realizado</label><br>
+				<input type="radio" name="status" value="Cancelled" id="cancelled"><label for="cancelled">Cancelado</label><br>
+			</fieldset>
+			<fieldset>
+				<legend>Responsable</legend>
+				<select>
+					<option>Juan Robledo</option>
+					<option>Adrián Ramírez</option>
+					<option>Alfredo Solis</option>
+					<option>Carlos Cervantes</option>
+				</select>
+			</fieldset>
+			<fieldset>
+				<legend>Tipo</legend>
+				<input type="radio" name="type" value="Predictive" id="predictive"><label for="predictive">Predictivo</label><br>
+				<input type="radio" name="type" value="Corrective" id="corrective"><label for="corrective">Correctivo</label><br>
+			</fieldset>
+			<fieldset>
+				<legend>Repetición</legend>
+				<input type="checkbox" name="repetition">
+				<label>Repetir cada</label>
+				<input type="number" name="" class="numberInput">
+				<select>
+					<option>días</option>
+					<option>meses</option>
+				</select>
+			</fieldset>
+			<fieldset>
+				<legend>Descripción</legend>
+				<textarea></textarea>
+			</fieldset>
+		</form>
+	</div>
+</body>
+</html>

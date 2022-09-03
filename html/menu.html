@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>CRM</title>
+        <link rel="stylesheet" type="text/css" href="main.css">
+        <link rel="stylesheet" type="text/css" href="menu.css">
+        <!-- <script src="js/jquery.min.js"></script> -->
+        <script src="js/jsPDF/dist/jspdf.es.min.js" type="module"></script>
+        <script type="module">
+            import { jsPDF } from "./js/jsPDF/dist/jspdf.es.min.js";
+            var doc = new jsPDF();
+            doc.text(20, 20, 'Hola mundo');
+            doc.text(20,30, 'Vamos a genera un pdf desde el lado del cliente');
+
+            doc.addPage();
+            doc.text(20, 20, 'Este texto está en otra página')
+
+            doc.save('documento.pdf')
+            console.log('El documento se ha guardado');
+        </script>
+    </head>
+    <body>
+        <div class="menu">
+            <ul>
+                <li>
+                    <img src="home.jpg" width="11pt"> Inicio
+                </li>
+                <li>
+                    <img src="home.jpg" width="11pt"> Mantenimientos
+                </li>
+                <li>
+                    <img src="home.jpg" width="11pt"> Compras
+                </li>
+                <li>
+                    <img src="home.jpg" width="11pt"> Configuración
+                </li>
+            </ul>
+        </div>
+        <div class="content">
+
+        </div>
+        
+    </body>
+</html>
