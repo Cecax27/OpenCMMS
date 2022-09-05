@@ -199,15 +199,6 @@ class Crm:
 
         Button(mainFrame, text='Ver más', command=lambda: self.objetoMantenimientos.displayMaintenance(tabla.focus())).place(x=200, y=800)
 
-        # lista = mantenimientos.buscarTodos()
-        # listaId = []
-        # for mantenimiento in lista:
-        #     lista[lista.index(mantenimiento)] = [mantenimiento[4], mantenimiento[1], mantenimiento[2], empleados.buscar(mantenimiento[3])[2]]
-        #     listaId.append(mantenimiento[0])
-
-        # tabla = crearTabla(['Descripción','Fecha','Estado','Responsable'],listaId,[300, 90, 80, 100], lista, mainFrame, 15, '')
-        # tabla.place(x=10, y=90)
-
         lista = mantenimientos.getAll()
 
         allMaintenances = Frame(mainFrame, highlightthickness=1, bg="#ffffff")
@@ -1355,144 +1346,121 @@ class Mantenimientos(Crm):
             self.tabla.insert('', 0,id=x[0], text = x[1], values =x[2])
 
     def actualizarActividades(self, *event):
+        print("Llegue aqui")
         id = self.tabla.focus()
-        text = self.tabla.item(id, option='text')
-        self.listaActividadesAsignadas = actividades.buscarPorEquipo(text)
+        self.listaActividadesAsignadas = actividades.buscarPorEquipo(id)
+        print(self.listaActividadesAsignadas)
         if len(self.listaActividadesAsignadas) < 1:
-            self.listaActividadesAsignadas =(['','Equipo sin actividades','',''],)
+            self.listaActividadesAsignadas =(['','Equipo sin actividades'],)
         self.tablaActividadesAsignadas.delete(*self.tablaActividadesAsignadas.get_children())        
         for x in self.listaActividadesAsignadas:
-            #print(x)
-            self.tablaActividadesAsignadas.insert('', 0, values = (x[1],x[2],x[3]), text = x[0],tags=("mytag",))
+            print(x)
+            self.tablaActividadesAsignadas.insert('', 0, id= x[0], values = x[2], text = x[1])
 
     def nuevo(self):
-        self.ventana = Toplevel()
-        self.ventana.title('Nuevo mantenimiento')
+        global mainFrame
+        clearMainFrame()
+        
+        #Tittle
+        Label(mainFrame, text='Mantenimiento preventivo', bg="#ffffff", font=("Noto Sans", "11", "bold")).place(x=10, y=10)
 
-        self.frame = LabelFrame(self.ventana, text='Registrar mantenimiento')
-        self.frame.grid(column=0,row=0,pady=5,padx=5,sticky='w e')
-
-        #Fecha---------------
-        self.frameF = LabelFrame(self.frame, text='Fecha')
-        self.frameF.grid(column=0,row=0, rowspan=4, pady=5,padx=5,sticky='w e n s')
-
-        fechaHoy = datetime.now()
-        self.cal = Calendar(self.frameF, selectmode='day', year=int(fechaHoy.strftime('%Y')), month = int(fechaHoy.strftime('%m')), day =int(fechaHoy.strftime('%d')))
-        self.cal.grid(column=0,row=0,pady=5,padx=5, sticky='n s')
+        #Date
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=40)
+        today = datetime.now()
+        self.cal = Calendar(mainFrame, font=("Noto Sans", "9", "normal"),bg="#ffffff", selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')))
+        self.cal.place(x=10, y=70)
 
         #Estado------------
-        self.listaEstados=['Programado', 'Realizado', 'Cancelado']
-        Label(self.frame, text='Estado: ').grid(column=1, row=0, padx=5, pady=5)
-        self.estado = ttk.Combobox(self.frame, state='readonly',values=self.listaEstados)
-        self.estado.grid(column=2,row=0,pady=5,padx=5)
+        self.listaEstados=[mantenimientos.Done, mantenimientos.Programmed]
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=280)
+        self.estado = ttk.Combobox(mainFrame, state='readonly',values=self.listaEstados)
+        self.estado.place(x=10, y=310)
 
-        #Responsable------------
-        self.listaEmpleados = empleados.ver()
-        self.listaNombres=[]
-        for x in self.listaEmpleados:
-            self.listaNombres.append(x[2])
-        Label(self.frame, text='Responsable: ').grid(column=1, row=1, padx=5, pady=5)
-        self.responsable = ttk.Combobox(self.frame, state='readonly',values=self.listaNombres)
-        self.responsable.grid(column=2,row=1,pady=5,padx=5)
+        #Responsible
+        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=340)
+        self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = empleados.ver('nombre'))
+        self.responsible.place(x=10, y=370)
 
-        #Tipo------------
-        self.listaTipo=['Preventivo', 'Correctivo']
-        Label(self.frame, text='Tipo: ').grid(column=1, row=2, padx=5, pady=5)
-        self.tipo = ttk.Combobox(self.frame, state='readonly',values=self.listaTipo)
-        self.tipo.grid(column=2,row=2,pady=5,padx=5)
+        #Repeat
+        self.repeatOn = Checkbutton(mainFrame, bg="#ffffff", text="Repetir cada", font=("Noto Sans", "10", "normal"))
+        self.repeatOn.place(x=10, y=400)
+        self.repeat = Entry(mainFrame, width=5, highlightthickness=2)
+        self.repeat.place(x=120, y=400)
+        Label(mainFrame, text='días', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=160, y=400)
 
-        #Tiempo Programado------------------
-        Label(self.frame, text='Repetir cada: ').grid(column=1, row=3,pady=5,padx=5)
-        self.tiempo = Entry(self.frame)
-        self.tiempo.grid(column=2,row=3,pady=5,padx=5)
+        #Description
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=430)
+        self.description = Text(mainFrame, width=40, height=9, font=("Noto Sans", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
+        self.description.place(x=10, y=460)
 
-        #Comentario
-        self.frameD = LabelFrame(self.frame, text='Comentario')
-        self.frameD.grid(column=3,row=0,rowspan=4, pady=5,padx=5,sticky='w e')
+        Button(mainFrame, text='Guardar',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveCorrective).place(x=root.winfo_width()-100, y=10)
 
-        self.comentario = Text(self.frameD, width=40, height=13)
-        self.comentario.grid(column=0,row=0, pady=5,padx=5)
-
-        btGuardar = Button(self.frame, text='Guardar', command= self.nuevoGuardar).grid(column=4, row=1)
-        btCancelar = Button(self.frame, text='Cancelar', command=self.ventana.destroy).grid(column=4, row=2) 
-
-        #Actividades---------------
-
-        self.frameA = LabelFrame(self.frame, text='Actividades')
-        self.frameA.grid(column=0, row=4, columnspan=5, pady=5, padx=5, sticky='w e')   
-
-        #Departamento------------
+        #Departamento
         self.listaDepartamentos = areas.getDepartamentos()
         self.listaNombresDepartamentos=[]
         for x in self.listaDepartamentos:
             self.listaNombresDepartamentos.append(x[1])
-        Label(self.frameA, text='Departamento: ').grid(column=0, row=0, padx=5, pady=5)
-        self.departamento = ttk.Combobox(self.frameA, state='readonly',values=self.listaNombresDepartamentos)
+        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=400, y=10)
+        self.departamento = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresDepartamentos)
         self.departamento.bind("<<ComboboxSelected>>", self.ActualizarAreas)
-        self.departamento.grid(column=1,row=0,pady=5,padx=5)
+        self.departamento.place(x=400, y=40)
 
         #Area
         self.listaNombresAreas=[]
-        Label(self.frameA, text='Área: ').grid(column=0, row=1, padx=5, pady=5)
-        self.area = ttk.Combobox(self.frameA, state='readonly',values=self.listaNombresAreas)
+        Label(mainFrame, text='Área', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=600, y=10)
+        self.area = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresAreas)
         self.area.bind("<<ComboboxSelected>>", self.ActualizarEquipos)
-        self.area.grid(column=1,row=1,pady=5,padx=5)
+        self.area.place(x=600, y=40)
 
-        #Tabla de equipos
-        self.tabla = ttk.Treeview(self.frameA, height = 10, columns = ('nombre','descripcion'), selectmode = 'browse')
-        self.tabla.tag_bind("mytag", "<<TreeviewSelect>>", self.actualizarActividades)
-        self.tabla.heading('#0', text='Id', anchor=CENTER)
-        self.tabla.heading('#1', text='Nombre', anchor=CENTER)
-        self.tabla.heading('#2', text='Descripción', anchor=CENTER)
-        self.tabla.column('#0', minwidth=0, width=40)
-        self.tabla.column('#1', minwidth=0, width=120)
-        self.tabla.column('#2', minwidth=0, width=120)
+        #Plants table
+        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=400, y=80)
+        self.tabla = crearTabla(
+            ['Nombre', 'Descripción'],
+            [1,],
+            [120, 150],
+            [('','Seleccione un area y departamento'),],
+            mainFrame,
+            10,
+            self.actualizarActividades
+        )
+        self.tabla.place(x=400, y=110)
 
-        lista = [('','Seleccione un area y departamento','','','')]
-        for x in lista:
-            self.tabla.insert('', 0, values = (x[1],x[4]), text = x[0],tags=("mytag",))
+        #Activities table
+        Label(mainFrame, text='Actividades', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=400, y=340)
+        self.tablaActividadesAsignadas = crearTabla(
+            ['Nombre', 'Descripción'],
+            [1,],
+            [120, 150],
+            [('',''),],
+            mainFrame,
+            10,
+            ''
+        )
 
-        self.tabla.grid(row=2, column=0, pady=5, padx=5, columnspan=2)
-
-        #Tabla de actividades asignadas-------------
-        self.tablaActividadesAsignadas = ttk.Treeview(self.frameA, height = 10, columns = ('nombre','descripcion','tiempo'), selectmode = 'browse')
-        self.tablaActividadesAsignadas.heading('#0', text='Id', anchor=CENTER)
-        self.tablaActividadesAsignadas.heading('#1', text='Nombre', anchor=CENTER)
-        self.tablaActividadesAsignadas.heading('#2', text='Descripción', anchor=CENTER)
-        self.tablaActividadesAsignadas.heading('#3', text='Tiempo aprox. (hrs)', anchor=CENTER)
-        self.tablaActividadesAsignadas.column('#0', minwidth=0, width=40)
-        self.tablaActividadesAsignadas.column('#1', minwidth=0, width=120)
-        self.tablaActividadesAsignadas.column('#2', minwidth=0, width=120)
-        self.tablaActividadesAsignadas.column('#3', minwidth=0, width=60)
-
-        lista =(['','Seleccione un equipo','',''],)
-        for x in lista:
-            self.tablaActividadesAsignadas.insert('', 0, values = (x[1],x[2],x[3]), text = x[0])
-
-        self.tablaActividadesAsignadas.grid(row=0, column=2, pady=5, padx=5, rowspan=3)
+        self.tablaActividadesAsignadas.place(x=400, y=370)
 
         #Botón para asignar actividad
-        Button(self.frameA, text='+', command = self.asignarActividad).grid(row=1, column=7)
+        #Button(self.frameA, text='+', command = self.asignarActividad).grid(row=1, column=7)
 
         #Botón para eliminar actividad asignada
-        Button(self.frameA, text='-', command = self.eliminarActividadAsignada).grid(row=2, column=7)
+        #Button(self.frameA, text='-', command = self.eliminarActividadAsignada).grid(row=2, column=7)
 
         #Tabla de equipos
-        self.tablaEquipos = ttk.Treeview(self.frameA, height = 10, columns = ('nombre','descripcion'), selectmode = 'browse')
-        self.tablaEquipos.heading('#0', text='Id', anchor=CENTER)
-        self.tablaEquipos.heading('#1', text='Nombre', anchor=CENTER)
-        self.tablaEquipos.heading('#2', text='Descripción', anchor=CENTER)
-        self.tablaEquipos.column('#0', minwidth=0, width=40)
-        self.tablaEquipos.column('#1', minwidth=0, width=120)
-        self.tablaEquipos.column('#2', minwidth=0, width=120)
+        # self.tablaEquipos = ttk.Treeview(self.frameA, height = 10, columns = ('nombre','descripcion'), selectmode = 'browse')
+        # self.tablaEquipos.heading('#0', text='Id', anchor=CENTER)
+        # self.tablaEquipos.heading('#1', text='Nombre', anchor=CENTER)
+        # self.tablaEquipos.heading('#2', text='Descripción', anchor=CENTER)
+        # self.tablaEquipos.column('#0', minwidth=0, width=40)
+        # self.tablaEquipos.column('#1', minwidth=0, width=120)
+        # self.tablaEquipos.column('#2', minwidth=0, width=120)
 
-        lista = [('','Seleccione un area y departamento','','','')]
-        for x in lista:
-            self.tabla.insert('', 0, values = (x[1],x[4]), text = x[0],tags=("mytag",))
+        # lista = [('','Seleccione un area y departamento','','','')]
+        # for x in lista:
+        #     self.tabla.insert('', 0, values = (x[1],x[4]), text = x[0],tags=("mytag",))
 
-        self.tablaEquipos.grid(row=0, column=8, pady=5, padx=5, rowspan=3)
-        self.listaEquiposSeleccionados = []
-        self.listaActividadesSeleccionadas = []
+        # self.tablaEquipos.grid(row=0, column=8, pady=5, padx=5, rowspan=3)
+        # self.listaEquiposSeleccionados = []
+        # self.listaActividadesSeleccionadas = []
 
     def newCorrective(self):
         global mainFrame

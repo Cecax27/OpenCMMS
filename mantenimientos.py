@@ -191,7 +191,6 @@ def getAll():
     """Return all the maintenances in the database"""
     instruction = "SELECT id FROM mantenimientos ORDER BY id DESC"
     listIds = sql.peticion(instruction)
-    print(listIds)
     listMaintenances = []
     for i in listIds:
         listMaintenances.append(Maintenance(i[0]))
