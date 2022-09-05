@@ -4,3 +4,4 @@ pruebas.py
 plantilla.py
 **/modules/database.db
 **/html
+__pycache__/mantenimientos.cpython-310.pyc

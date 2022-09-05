@@ -116,7 +116,7 @@ class Maintenance:
         self.repeat = rawData[6]
         self.previous = rawData[7]
         self.next = rawData[8]
-        print(f"Maintenance with ID {id} was found")
+        #print(f"Maintenance with ID {id} was found")
         return 0
 
 

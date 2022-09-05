@@ -96,7 +96,7 @@ class Crm:
             width=12,
             borderwidth=5,
             relief=FLAT,
-            command=self.mantenimientos
+            command=self.objetoMantenimientos.main
             ).place(x=0.25*root.winfo_width()/6, y=4)
 
         Button(menuFrame, 
@@ -169,92 +169,11 @@ class Crm:
 
         global mainFrame
         mainFrame = Frame(self.root)
-        mainFrame.config(bg="#ffffff",
-        width=root.winfo_width(),
-        height=root.winfo_height()-50)
-        mainFrame.grid(column=0, row=1)
 
         self.mainframe = mainFrame
 
-        Label(self.mainframe, 
-            text=datetime.now().strftime('%d/%m/%Y'),
-            bg="#ffffff",
-            font=("Noto Sans", "11", "normal")).place(x=root.winfo_width()-100, y=10)
-             
-
-    def mantenimientos(self):
-        global mainFrame
         
-        clearMainFrame()
-
-        #Título
-        Label(mainFrame, text='Mantenimientos', bg="#ffffff", font=("Noto Sans", "11", "bold")).place(x=10, y=10)
-
-        #Botones
-        Button(mainFrame, text='+ Mantenimiento preventivo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.objetoMantenimientos.nuevo).place(x=10, y=40)
-
-        Button(mainFrame, text='+ Mantenimiento correctivo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.objetoMantenimientos.newCorrective).place(x=200, y=40)
-
-        Button(mainFrame, text='Eliminar',command=lambda: self.objetoMantenimientos.eliminarMantenimiento(self.tabla.focus())).place(x=100, y=800)
-
-        Button(mainFrame, text='Ver más', command=lambda: self.objetoMantenimientos.displayMaintenance(tabla.focus())).place(x=200, y=800)
-
-        lista = mantenimientos.getAll()
-
-        allMaintenances = Frame(mainFrame, highlightthickness=1, bg="#ffffff")
-        allMaintenances.place(x=10, y=90)
-        canvas = Canvas(allMaintenances, bg="#ffffff", width=root.winfo_width()/2-70, height=root.winfo_height()-200, highlightthickness=0)
-        scrollbar = Scrollbar(allMaintenances, orient='vertical', command=canvas.yview)
-        scrollable_frame = Frame(canvas, bg="#ffffff")
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        for i in lista:
-            mant = Frame(scrollable_frame)
-            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
-            mant.pack(pady=10, padx=15)
-            #Titular
-            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Noto Sans", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
-            #Date
-            Label(mant, text=i.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Noto Sans", "8", "normal")).place(x=10, y=30)
-            #Status
-            if i.status == 'Realizado' or i.status == 'Realizado Programado':
-                color = colorGreen
-            elif i.status == 'Programado':
-                color = colorBlue
-            elif i.status == 'Cancelado':
-                color = colorRed
-            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
-            #type
-            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Noto Sans", "8", "bold")).place(x=140, y=30)
-            #Descripción
-            Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
-            #Botón
-            Button(mant, text='Ver más',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self.objetoMantenimientos)).place(x=root.winfo_width()/2-170, y=60)
-
-        canvas.pack(side="left", fill="both", expand=True, padx=2, pady=2)
-        scrollbar.pack(side="right", fill="y")
-
-        lista = mantenimientos.buscarAtrasados(date.today())
-        listaId = []
-        for mantenimiento in lista:
-            lista[lista.index(mantenimiento)] = [mantenimiento[4], mantenimiento[1], mantenimiento[2], empleados.buscar(mantenimiento[3])[2]]
-            listaId.append(mantenimiento[0])
-
-        Label(mainFrame, text='Mantenimientos programados para hoy:', bg="#ffffff", font=("Noto Sans", "11", "normal")).place(x=500, y=30)
-
-        if len(lista) == 0:
-            Label(mainFrame, text='No hay mantenimientos pendientes.', fg="#aad400" ,bg="#ffffff", font=("Noto Sans", "11", "normal")).place(x=700, y=60)
-        else:
-            tabla2 = crearTabla(['Descripción','Fecha','Estado','Responsable'],listaId,[200, 70, 100, 100], lista, mainFrame, 10, '')
-            tabla2.place(x=700, y=60)
-
-            Button(mainFrame, text='Marcar como realizado', command=lambda: objetoMantenimientos.realizarMantenimiento(self.tabla.focus())).place(x=700, y=300)
-
-            Button(mainFrame, text='Marcar como cancelado', command=lambda: self.cancelarMantenimiento(self.tabla.focus())).place(x=900, y=300)
-
-            Button(mainFrame, text='Ver más',command=lambda: self.objetoMantenimientos.displayMaintenance(tabla2.focus())).place(x=1100, y=300)
+        self.objetoMantenimientos.main()
 
     def actividades(self):
         self.mainframe.destroy()
@@ -448,8 +367,6 @@ class Crm:
          empleados.new(self.clave.get(), self.nombre.get())
          self.ventana.destroy()
          self.empleados()
-
-
 
 class BarraMenu(Crm):
 
@@ -1325,6 +1242,81 @@ class Mantenimientos(Crm):
     def __init__(self, padre):
         self.padre = padre
         global mainFrame
+        
+    def main(self):
+        global mainFrame
+        global root
+        
+        clearMainFrame()
+
+        #Título
+        Label(mainFrame, text='Mantenimientos', bg="#ffffff", font=("Noto Sans", "11", "bold")).place(x=10, y=10)
+
+        #Botones
+        Button(mainFrame, text='+ Mantenimiento preventivo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.nuevo).place(x=10, y=40)
+
+        Button(mainFrame, text='+ Mantenimiento correctivo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.newCorrective).place(x=200, y=40)
+
+        Button(mainFrame, text='Eliminar',command=lambda: self.eliminarMantenimiento(self.tabla.focus())).place(x=100, y=800)
+
+        Button(mainFrame, text='Ver más', command=lambda: self.displayMaintenance(tabla.focus())).place(x=200, y=800)
+
+        lista = mantenimientos.getAll()
+
+        allMaintenances = Frame(mainFrame, highlightthickness=1, bg="#ffffff")
+        allMaintenances.place(x=10, y=90)
+        canvas = Canvas(allMaintenances, bg="#ffffff", width=root.winfo_width()/2-70, height=root.winfo_height()-200, highlightthickness=0)
+        scrollbar = Scrollbar(allMaintenances, orient='vertical', command=canvas.yview)
+        scrollable_frame = Frame(canvas, bg="#ffffff")
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        for i in lista:
+            mant = Frame(scrollable_frame)
+            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
+            mant.pack(pady=10, padx=15)
+            #Titular
+            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Noto Sans", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
+            #Date
+            Label(mant, text=i.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Noto Sans", "8", "normal")).place(x=10, y=30)
+            #Status
+            if i.status == 'Realizado' or i.status == 'Realizado Programado':
+                color = colorGreen
+            elif i.status == 'Programado':
+                color = colorBlue
+            elif i.status == 'Cancelado':
+                color = colorRed
+            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
+            #type
+            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Noto Sans", "8", "bold")).place(x=140, y=30)
+            #Descripción
+            Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
+            #Botón
+            Button(mant, text='Ver más',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self)).place(x=root.winfo_width()/2-170, y=60)
+
+        canvas.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        scrollbar.pack(side="right", fill="y")
+
+        lista = mantenimientos.buscarAtrasados(date.today())
+        listaId = []
+        for mantenimiento in lista:
+            lista[lista.index(mantenimiento)] = [mantenimiento[4], mantenimiento[1], mantenimiento[2], empleados.buscar(mantenimiento[3])[2]]
+            listaId.append(mantenimiento[0])
+
+        Label(mainFrame, text='Mantenimientos programados para hoy:', bg="#ffffff", font=("Noto Sans", "11", "normal")).place(x=500, y=30)
+
+        if len(lista) == 0:
+            Label(mainFrame, text='No hay mantenimientos pendientes.', fg="#aad400" ,bg="#ffffff", font=("Noto Sans", "11", "normal")).place(x=700, y=60)
+        else:
+            tabla2 = crearTabla(['Descripción','Fecha','Estado','Responsable'],listaId,[200, 70, 100, 100], lista, mainFrame, 10, '')
+            tabla2.place(x=700, y=60)
+
+            Button(mainFrame, text='Marcar como realizado', command=lambda: self.realizarMantenimiento(self.tabla.focus())).place(x=700, y=300)
+
+            Button(mainFrame, text='Marcar como cancelado', command=lambda: self.cancelarMantenimiento(self.tabla.focus())).place(x=900, y=300)
+
+            Button(mainFrame, text='Ver más',command=lambda: self.displayMaintenance(tabla2.focus())).place(x=1100, y=300)
 
     def ActualizarAreas(self, event):
         #print(self.departamento2.current())
@@ -1774,20 +1766,6 @@ class Mantenimientos(Crm):
                     Label(framePlant, text=activity.name, fg='#111111', bg="#f2f2f2", font=("Noto Sans", "8", "bold"), wraplength=180, justify='left').place(x=10, y=110+plant.index(activity)*60)
                     #Label descripcion actividad
                     Label(framePlant, text=activity.description, fg='#111111', bg="#f2f2f2", font=("Noto Sans", "8", "normal"), wraplength=180, justify='left').place(x=10, y=130+plant.index(activity)*60)
-                
-
-
-        # for i in selActivities:
-        #     frameActivity = Frame(mainFrame, borderwidth=5)
-        #     frameActivity.place(x=500, y=selActivities.index(i)*80)
-        #     activity = actividades.buscarActividadAsignada(i[2])
-        #     plant = equipos.buscar(activity[4])
-        #     area = areas.buscar(plant[3])
-        #     Label(frameActivity, text=area[4]+'>'+area[1]+'>'+str(plant[1])).grid(column=0, row = 0)
-        #     Label(frameActivity, text=activity[1]).grid(column=0, row=1)
-        #     Label(frameActivity, text=activity[2]).grid(column=0, row=2)
-
-        
 
 if __name__ == '__main__':
     aplicacion = Crm()
