@@ -10,12 +10,19 @@ from tkcalendar import Calendar
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
+from modules.ui.scrollableFrame import *
+import locale
+
+#locale.setlocale(locale.LC_ALL, 'es-ES')
 
 #Constantes-----
 colorGreen = '#37c842'
 colorRed = '#c83737'
 colorBlue = '#37abc8'
 colorGray = '#f2f2f2'
+colorDarkGray = '#dadada'
+
+
 
 #Funciones--------
 def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
@@ -28,7 +35,7 @@ def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
         return Label(text='No hay datos')
 
     nuevaTabla = ttk.Treeview(lugar, height = altura, columns = encabezados[1:], selectmode = 'browse')
-    nuevaTabla.tag_configure("color", background = "#ffffff", font=("Noto Sans", "9", "normal"))
+    nuevaTabla.tag_configure("color", background = "#ffffff", font=("Segoe UI", "9", "normal"))
     if funcion != '':
         nuevaTabla.tag_bind("mytag", "<<TreeviewSelect>>", funcion)
         
@@ -49,9 +56,21 @@ def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
 def crearFuncion(id, objeto):
     return lambda:objeto.padre.objetoMantenimientos.displayMaintenance(id)
 
+def deleteActivityFromList(activity, objeto):
+    return lambda:objeto.padre.objetoMantenimientos.eliminarActividadAsignada(activity)
+
+def getPlant(activity):
+    return activity.plant.department
+
 def clearMainFrame():
     global mainFrame
     global root
+    
+    global imgCorrective
+    global imgPreventive
+    imgCorrective = PhotoImage(file='img/corrective.png').subsample(8)
+    imgPreventive = PhotoImage(file='img/preventive.png').subsample(8)
+    
 
     mainFrame.destroy()
     mainFrame = Frame(root)
@@ -88,7 +107,7 @@ class Crm:
 
         Button(menuFrame, 
             text='Mantenimientos',
-            font=("Noto Sans", "11", "normal"),
+            font=("Segoe UI", "11", "normal"),
             bg=colorButton,
             fg="#ffffff",
             bd=0,
@@ -101,7 +120,7 @@ class Crm:
 
         Button(menuFrame, 
             text='Equipos',
-            font=("Noto Sans", "11", "normal"),
+            font=("Segoe UI", "11", "normal"),
             bg=colorButton,
             fg="#ffffff",
             bd=0,
@@ -114,7 +133,7 @@ class Crm:
 
         Button(menuFrame, 
             text='Actividades',
-            font=("Noto Sans", "11", "normal"),
+            font=("Segoe UI", "11", "normal"),
             bg=colorButton,
             fg="#ffffff",
             bd=0,
@@ -127,7 +146,7 @@ class Crm:
 
         Button(menuFrame, 
             text='Departamentos',
-            font=("Noto Sans", "11", "normal"),
+            font=("Segoe UI", "11", "normal"),
             bg=colorButton,
             fg="#ffffff",
             bd=0,
@@ -140,7 +159,7 @@ class Crm:
 
         Button(menuFrame, 
             text='Areas',
-            font=("Noto Sans", "11", "normal"),
+            font=("Segoe UI", "11", "normal"),
             bg=colorButton,
             fg="#ffffff",
             bd=0,
@@ -153,7 +172,7 @@ class Crm:
 
         Button(menuFrame, 
             text='Empleados',
-            font=("Noto Sans", "11", "normal"),
+            font=("Segoe UI", "11", "normal"),
             bg=colorButton,
             fg="#ffffff",
             bd=0,
@@ -739,7 +758,7 @@ class Equipos(Crm):
 
         clearMainFrame()
 
-        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Noto Sans", "11", "bold")).place(x=10, y=10)
+        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
 
         #Departamento------------
         self.listaDepartamentos = areas.getDepartamentos()
@@ -747,20 +766,20 @@ class Equipos(Crm):
         for x in self.listaDepartamentos:
             self.listaNombresDepartamentos.append(x[1])
         
-        Label(mainFrame, text='Departamento', fg='#666666', bg='#ffffff', font=("Noto Sans", "10", "normal")).place(x=10, y=40)
+        Label(mainFrame, text='Departamento', fg='#666666', bg='#ffffff', font=("Segoe UI", "10", "normal")).place(x=10, y=40)
         self.departamento2 = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresDepartamentos)
         self.departamento2.bind("<<ComboboxSelected>>", self.editarActualizarAreas)
         self.departamento2.place(x=10, y=70)
 
         #Area
         self.listaNombresAreas=[]
-        Label(mainFrame, text='Área', fg='#666666', bg='#ffffff', font=("Noto Sans", "10", "normal")).place(x=10, y=110)
+        Label(mainFrame, text='Área', fg='#666666', bg='#ffffff', font=("Segoe UI", "10", "normal")).place(x=10, y=110)
         self.area = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresAreas)
         self.area.bind("<<ComboboxSelected>>", self.editarActualizarEquipos)
         self.area.place(x=10, y=140)
 
         #Tabla de equipos-----------------------
-        Label(mainFrame, text='Equipos', fg='#666666', bg='#ffffff', font=("Noto Sans", "10", "normal")).place(x=10, y=180)
+        Label(mainFrame, text='Equipos', fg='#666666', bg='#ffffff', font=("Segoe UI", "10", "normal")).place(x=10, y=180)
         self.tabla = crearTabla(
             ['Nombre',],
             [0],
@@ -772,13 +791,13 @@ class Equipos(Crm):
         )
         self.tabla.place(x=10, y=210)
 
-        Button(mainFrame, text='+ Agregar equipo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.nuevo).place(x=10, y=450)
+        Button(mainFrame, text='+ Agregar equipo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.nuevo).place(x=10, y=450)
 
         self.info = Frame(mainFrame)
         self.info.config(bg=colorGray, width=root.winfo_width()-250, height=root.winfo_height()-50)
         self.info.place(x=250, y=0)
 
-        Label(self.info, text='No se ha seleccionado ningún equipo', bg=colorGray, font=("Noto Sans", "11", "bold")).place(x=10, y=10)
+        Label(self.info, text='No se ha seleccionado ningún equipo', bg=colorGray, font=("Segoe UI", "11", "bold")).place(x=10, y=10)
 
     def actualizarInformacion(self, *event):
         global root
@@ -796,60 +815,67 @@ class Equipos(Crm):
         select[3] = areas.buscar(select[3])[1]
 
         #Labels principales
-        Label(self.info, text=select[1], bg=colorGray, font=("Noto Sans", "10", "bold"), wraplength=400, justify='left').place(x=10, y=10)
-        Label(self.info, text=select[2], bg=colorGray, font=("Noto Sans", "9", "normal"), wraplength=400, justify='left').place(x=10, y=40)
+        Label(self.info, text=select[1], bg=colorGray, font=("Segoe UI", "10", "bold"), wraplength=400, justify='left').place(x=10, y=10)
+        Label(self.info, text=select[2], bg=colorGray, font=("Segoe UI", "9", "normal"), wraplength=400, justify='left').place(x=10, y=40)
 
         #Ultimo mantenimiento realizado
-        Label(self.info, text="Último mantenimiento", fg='#666666', bg=colorGray, font=("Noto Sans", "9", "normal")).place(x=10, y=80)
+        Label(self.info, text="Último mantenimiento", fg='#666666', bg=colorGray, font=("Segoe UI", "9", "normal")).place(x=10, y=80)
         text = mantenimientos.ultimoMantenimientoRealizado(select[0])
         if text == None:
             text = 'No se ha hecho ninguno'
         else:
             text = text[1]
-        Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Noto Sans", "9", "bold")).place(x=140, y=80)
+        Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Segoe UI", "9", "bold")).place(x=140, y=80)
 
         #Ultimo mantenimiento programado
-        Label(self.info, text="Siguiente mantenimiento programado", fg='#666666', bg=colorGray, font=("Noto Sans", "9", "normal")).place(x=400, y=80)
+        Label(self.info, text="Siguiente mantenimiento programado", fg='#666666', bg=colorGray, font=("Segoe UI", "9", "normal")).place(x=400, y=80)
         text = mantenimientos.ultimoMantenimientoProgramado(select[0])
         if text == None:
             text = 'No hay mantenimiento programado'
         else:
             text = text[1]
-        Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Noto Sans", "9", "bold")).place(x=620, y=80)
+        Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Segoe UI", "9", "bold")).place(x=620, y=80)
 
         #Botones
-        Button(self.info, text='Editar',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=lambda:self.editar(select[0])).place(x=root.winfo_width()-500, y=10)
+        Button(self.info, text='Editar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=lambda:self.editar(select[0])).place(x=root.winfo_width()-500, y=10)
 
-        Button(self.info, text='Eliminar',font=("Noto Sans", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=lambda:self.eliminar(select[0])).place(x=root.winfo_width()-445, y=10)
+        Button(self.info, text='Eliminar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=lambda:self.eliminar(select[0])).place(x=root.winfo_width()-445, y=10)
 
-        Button(self.info, text='Asignar actividades',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command = lambda: self.asignarActividades(select[0], mantFrame)).place(x=root.winfo_width()-380, y=10)
+        Button(self.info, text='Asignar actividades',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command = lambda: self.asignarActividades(select[0], mantFrame)).place(x=root.winfo_width()-380, y=10)
 
         #Frame con barra de desplazamiento
-        v = Scrollbar(self.info, orient='horizontal')
-        v.place(x=10, y=0)
+        maintenancesFrame = Frame(self.info, highlightthickness=0, bg=colorGray)
+        maintenancesFrame.place(x=25,y=150)
 
-        mantFrame = Canvas(self.info, height=250, width=root.winfo_width()-250, xscrollcommand=v.set, scrollregion=(0,0,250,1000))
-        mantFrame.configure(bg=colorGray)
-        mantFrame.place(x=0,y=150)
+        mantFrame = Canvas(maintenancesFrame,bg=colorGray, height=260, width=root.winfo_width()-300, highlightthickness=0)
+        
+        v = Scrollbar(maintenancesFrame, orient='horizontal', command=mantFrame.xview)
+        scrollableFrame = Frame(mantFrame, bg=colorGray)
+        scrollableFrame.bind("<Configure>", lambda e: mantFrame.configure(scrollregion=mantFrame.bbox("all")))
+        mantFrame.create_window((0, 0), window=scrollableFrame, anchor='nw')
+        mantFrame.configure(xscrollcommand=v.set)
+        
+        
 
         #Mostrar mantenimientos
         for i in selectMantenimientos:
             #Creando frame
-            mant = Frame(mantFrame)
-            mant.config(bg=colorGray, highlightthickness=1, highlightbackground="#cccccc", width=250, height=250)
+            mant = Frame(scrollableFrame)
+            mant.config(bg=colorDarkGray, highlightthickness=0, highlightbackground="#cccccc", width=250, height=250)
             #mant.place(x=10+selectMantenimientos.index(i)*260, y=0)
-            mant.pack()
+            mant.pack(pady=5, padx=5, side=LEFT)
             #Titular
-            Label(mant, text='Mantenimiento ID '+str(i[0]), fg='#111111', bg=colorGray, font=("Noto Sans", "8", "bold"), wraplength=180, justify='left').place(x=10, y=10)
-            Label(mant, text=i[1], fg='#111111', bg=colorGray, font=("Noto Sans", "8", "normal")).place(x=10, y=30)
-            Label(mant, text=i[2], fg='#111111', bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=120, justify='right').place(x=100, y=30)
+            Label(mant, text='Mantenimiento ID '+str(i[0]), fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=10)
+            Label(mant, text=i[1], fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
+            Label(mant, text=i[2], fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "normal"), wraplength=120, justify='right').place(x=100, y=30)
             #Descripción
-            Label(mant, text='Matenimiento '+i[5], fg='#333333', bg=colorGray, font=("Noto Sans", "8", "bold")).place(x=10, y=60)
-            Label(mant, text=i[4], fg='#333333', bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=230, justify='left').place(x=10, y=80)
+            Label(mant, text='Matenimiento '+i[5], fg='#333333', bg=colorDarkGray, font=("Segoe UI", "8", "bold")).place(x=10, y=60)
+            Label(mant, text=i[4], fg='#333333', bg=colorDarkGray, font=("Segoe UI", "8", "normal"), wraplength=230, justify='left').place(x=10, y=80)
             #Botón
-            Button(mant, text='Ver más',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i[0], self)).place(x=180, y=200)
+            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i[0], self)).place(x=180, y=200)
 
-        v.config(command=mantFrame.xview)
+        mantFrame.pack(side="top", fill="both", expand=True, padx=2, pady=2)
+        v.pack(side="bottom", fill="x")
 
     def nuevo(self):
         self.verTodos = IntVar()
@@ -926,39 +952,39 @@ class Equipos(Crm):
         select[3] = areas.buscar(select[3])[1]
         
         #Nombre------------
-        nombre = Entry(self.info, font=("Noto Sans", "10", "bold"), bg='#ffffff', fg="#000000", highlightthickness=0, borderwidth=2, relief=FLAT, width=30)
+        nombre = Entry(self.info, font=("Segoe UI", "10", "bold"), bg='#ffffff', fg="#000000", highlightthickness=0, borderwidth=2, relief=FLAT, width=30)
         nombre.insert(0,select[1])
         nombre.place(x=10, y=10)
 
         #Descripcion-------------
-        descripcion = Entry(self.info, font=("Noto Sans", "9", "normal"), bg='#ffffff', fg="#000000", highlightthickness=0, borderwidth=2, relief=FLAT, width=100)
+        descripcion = Entry(self.info, font=("Segoe UI", "9", "normal"), bg='#ffffff', fg="#000000", highlightthickness=0, borderwidth=2, relief=FLAT, width=100)
         descripcion.insert(0,select[2])
         descripcion.place(x=10, y=40)
 
         #Ultimo mantenimiento realizado
-        Label(self.info, text="Último mantenimiento", fg='#666666', bg=colorGray, font=("Noto Sans", "9", "normal")).place(x=10, y=80)
+        Label(self.info, text="Último mantenimiento", fg='#666666', bg=colorGray, font=("Segoe UI", "9", "normal")).place(x=10, y=80)
         text = mantenimientos.ultimoMantenimientoRealizado(select[0])
         if text == None:
             text = 'No se ha hecho ninguno'
         else:
             text = text[1]
-        Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Noto Sans", "9", "bold")).place(x=140, y=80)
+        Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Segoe UI", "9", "bold")).place(x=140, y=80)
 
         #Ultimo mantenimiento programado
-        Label(self.info, text="Siguiente mantenimiento programado", fg='#666666', bg=colorGray, font=("Noto Sans", "9", "normal")).place(x=400, y=80)
+        Label(self.info, text="Siguiente mantenimiento programado", fg='#666666', bg=colorGray, font=("Segoe UI", "9", "normal")).place(x=400, y=80)
         text = mantenimientos.ultimoMantenimientoProgramado(select[0])
         if text == None:
             text = 'No hay mantenimiento programado'
         else:
             text = text[1]
-        Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Noto Sans", "9", "bold")).place(x=620, y=80)
+        Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Segoe UI", "9", "bold")).place(x=620, y=80)
 
         #Botones
-        Button(self.info, text='Guardar',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=lambda:self.editarGuardar(idEquipo,nombre.get(), descripcion.get())).place(x=root.winfo_width()-510, y=10)
+        Button(self.info, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=lambda:self.editarGuardar(idEquipo,nombre.get(), descripcion.get())).place(x=root.winfo_width()-510, y=10)
 
-        Button(self.info, text='Eliminar',font=("Noto Sans", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=lambda:self.eliminar(select[0])).place(x=root.winfo_width()-445, y=10)
+        Button(self.info, text='Eliminar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=lambda:self.eliminar(select[0])).place(x=root.winfo_width()-445, y=10)
 
-        Button(self.info, text='Asignar actividades',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command = lambda: self.asignarActividades(select[0], mantFrame)).place(x=root.winfo_width()-380, y=10)
+        Button(self.info, text='Asignar actividades',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command = lambda: self.asignarActividades(select[0], mantFrame)).place(x=root.winfo_width()-380, y=10)
 
         #Frame con barra de desplazamiento
         v = Scrollbar(self.info, orient='horizontal')
@@ -975,14 +1001,14 @@ class Equipos(Crm):
             mant.config(bg=colorGray, highlightthickness=1, highlightbackground="#cccccc", width=250, height=250)
             mant.place(x=10+selectMantenimientos.index(i)*260, y=0)
             #Titular
-            Label(mant, text='Mantenimiento ID '+str(i[0]), fg='#111111', bg=colorGray, font=("Noto Sans", "8", "bold"), wraplength=180, justify='left').place(x=10, y=10)
-            Label(mant, text=i[1], fg='#111111', bg=colorGray, font=("Noto Sans", "8", "normal")).place(x=10, y=30)
-            Label(mant, text=i[2], fg='#111111', bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=120, justify='right').place(x=100, y=30)
+            Label(mant, text='Mantenimiento ID '+str(i[0]), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=10)
+            Label(mant, text=i[1], fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
+            Label(mant, text=i[2], fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=120, justify='right').place(x=100, y=30)
             #Descripción
-            Label(mant, text='Matenimiento '+i[5], fg='#333333', bg=colorGray, font=("Noto Sans", "8", "bold")).place(x=10, y=60)
-            Label(mant, text=i[4], fg='#333333', bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=230, justify='left').place(x=10, y=80)
+            Label(mant, text='Matenimiento '+i[5], fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=10, y=60)
+            Label(mant, text=i[4], fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=230, justify='left').place(x=10, y=80)
             #Botón
-            Button(mant, text='Ver más',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i[0], self)).place(x=180, y=200)
+            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i[0], self)).place(x=180, y=200)
 
         v.config(command=mantFrame.xview)
 
@@ -1032,7 +1058,7 @@ class Equipos(Crm):
         #Variables
 
         #Tabla de actividades para asignar--------------
-        Label(self.info, text='Actividades disponibles',fg='#111111', bg=colorGray, font=("Noto Sans", "8", "bold"), wraplength=180, justify='left').place(x=10, y=150)
+        Label(self.info, text='Actividades disponibles',fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=150)
         lista = actividades.ver()
         listaIds = []
         for activity in lista:
@@ -1050,10 +1076,10 @@ class Equipos(Crm):
         self.tablaActividades.place(x=10, y=180)
 
         #Botón para asignar actividad
-        Button(self.info, text='Asignar',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command = lambda:self.asignarActividad(self.tablaActividades.focus(),id)).place(x=10, y=420)
+        Button(self.info, text='Asignar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command = lambda:self.asignarActividad(self.tablaActividades.focus(),id)).place(x=10, y=420)
 
         #Tabla de actividades asignadas-------------
-        Label(self.info, text='Actividades asignadas',fg='#111111', bg=colorGray, font=("Noto Sans", "8", "bold"), wraplength=180, justify='left').place(x=root.winfo_width()/2-150, y=150)
+        Label(self.info, text='Actividades asignadas',fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=root.winfo_width()/2-150, y=150)
         lista = actividades.buscarPorEquipo(id)
         listaIds = []
         for activity in lista:
@@ -1071,7 +1097,7 @@ class Equipos(Crm):
         self.tablaActividadesAsignadas.place(x=root.winfo_width()/2-150, y=180)
 
         #Botón para eliminar actividad asignada
-        Button(self.info, text='Eliminar',font=("Noto Sans", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command = lambda:self.eliminarActividadAsignada(self.tablaActividadesAsignadas.focus())).place(x=root.winfo_width()/2-150, y=420)
+        Button(self.info, text='Eliminar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command = lambda:self.eliminarActividadAsignada(self.tablaActividadesAsignadas.focus())).place(x=root.winfo_width()/2-150, y=420)
    
     def actualizarActividades(self, *event):
         id = self.tabla.focus()
@@ -1249,21 +1275,17 @@ class Mantenimientos(Crm):
         
         clearMainFrame()
 
-        #Título
-        Label(mainFrame, text='Mantenimientos', bg="#ffffff", font=("Noto Sans", "11", "bold")).place(x=10, y=10)
+        #Title
+        Label(mainFrame, text='Mantenimientos', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
 
-        #Botones
-        Button(mainFrame, text='+ Mantenimiento preventivo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.nuevo).place(x=10, y=40)
+        #Buttons
+        Button(mainFrame, text='+ Mantenimiento preventivo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.nuevo).place(x=10, y=40)
 
-        Button(mainFrame, text='+ Mantenimiento correctivo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.newCorrective).place(x=200, y=40)
+        Button(mainFrame, text='+ Mantenimiento correctivo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.newCorrective).place(x=200, y=40)
 
-        Button(mainFrame, text='Eliminar',command=lambda: self.eliminarMantenimiento(self.tabla.focus())).place(x=100, y=800)
-
-        Button(mainFrame, text='Ver más', command=lambda: self.displayMaintenance(tabla.focus())).place(x=200, y=800)
-
-        lista = mantenimientos.getAll()
-
-        allMaintenances = Frame(mainFrame, highlightthickness=1, bg="#ffffff")
+        #Show all maintenances
+        lista = mantenimientos.getAll()[0:10]
+        allMaintenances = Frame(mainFrame, highlightthickness=0, bg="#ffffff")
         allMaintenances.place(x=10, y=90)
         canvas = Canvas(allMaintenances, bg="#ffffff", width=root.winfo_width()/2-70, height=root.winfo_height()-200, highlightthickness=0)
         scrollbar = Scrollbar(allMaintenances, orient='vertical', command=canvas.yview)
@@ -1276,10 +1298,10 @@ class Mantenimientos(Crm):
             mant = Frame(scrollable_frame)
             mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
             mant.pack(pady=10, padx=15)
-            #Titular
-            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Noto Sans", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
+            #Tittle
+            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=45, y=10)
             #Date
-            Label(mant, text=i.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Noto Sans", "8", "normal")).place(x=10, y=30)
+            Label(mant, text=i.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=45, y=30)
             #Status
             if i.status == 'Realizado' or i.status == 'Realizado Programado':
                 color = colorGreen
@@ -1287,36 +1309,72 @@ class Mantenimientos(Crm):
                 color = colorBlue
             elif i.status == 'Cancelado':
                 color = colorRed
-            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
+            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
             #type
-            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Noto Sans", "8", "bold")).place(x=140, y=30)
+            if i.type == mantenimientos.Corrective:
+                Label(mant, image = imgCorrective, bd=0, width=25, height=25).place(x=10, y=15)
+            elif i.type == mantenimientos.Preventive:
+                Label(mant, image = imgPreventive, bd=0, width=25, height=25).place(x=10, y=15)
+            else:
+                Label(mant, image = imgCorrective, bd=0, width=25, height=25).place(x=10, y=15)
+            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=185, y=30)
+            
             #Descripción
-            Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Noto Sans", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
+            Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
             #Botón
-            Button(mant, text='Ver más',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self)).place(x=root.winfo_width()/2-170, y=60)
+            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self)).place(x=root.winfo_width()/2-170, y=60)
 
         canvas.pack(side="left", fill="both", expand=True, padx=2, pady=2)
         scrollbar.pack(side="right", fill="y")
 
-        lista = mantenimientos.buscarAtrasados(date.today())
-        listaId = []
-        for mantenimiento in lista:
-            lista[lista.index(mantenimiento)] = [mantenimiento[4], mantenimiento[1], mantenimiento[2], empleados.buscar(mantenimiento[3])[2]]
-            listaId.append(mantenimiento[0])
+        #Programmed maintenances
+        Label(mainFrame, text='Mantenimientos programado', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=root.winfo_width()/2, y=60)
+        
+        lista = mantenimientos.getProgrammed()
+        
+        programmedMaintenances = Frame(mainFrame, highlightthickness=0, bg="#ffffff")
+        programmedMaintenances.place(x=root.winfo_width()/2, y=90)
+        canvasprogrammedMaintenances = Canvas(programmedMaintenances, bg="#ffffff", width=root.winfo_width()/2-70, height=root.winfo_height()-200, highlightthickness=0)
+        scrollbarprogrammedMaintenances = Scrollbar(programmedMaintenances, orient='vertical', command=canvasprogrammedMaintenances.yview)
+        scrollable_frameprogrammedMaintenances = Frame(canvasprogrammedMaintenances, bg="#ffffff")
+        scrollable_frameprogrammedMaintenances.bind("<Configure>", lambda e: canvasprogrammedMaintenances.configure(scrollregion=canvasprogrammedMaintenances.bbox("all")))
+        canvasprogrammedMaintenances.create_window((0, 0), window=scrollable_frameprogrammedMaintenances, anchor='nw')
+        canvasprogrammedMaintenances.configure(yscrollcommand=scrollbarprogrammedMaintenances.set)
 
-        Label(mainFrame, text='Mantenimientos programados para hoy:', bg="#ffffff", font=("Noto Sans", "11", "normal")).place(x=500, y=30)
+        for i in lista:
+            mant = Frame(scrollable_frameprogrammedMaintenances)
+            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
+            mant.pack(pady=10, padx=15)
+            if i.date < datetime.date(datetime.now()):
+                actualColor = colorRed
+            else:
+                actualColor = colorGreen
+            Frame(mant, bg=actualColor, height=100, width=3).place(x=0, y=0)
+            #Titular
+            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
+            #Date
+            Label(mant, text=i.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
+            #Status
+            if i.status == 'Realizado' or i.status == 'Realizado Programado':
+                color = colorGreen
+            elif i.status == 'Programado':
+                color = colorBlue
+            elif i.status == 'Cancelado':
+                color = colorRed
+            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
+            #type
+            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=140, y=30)
+            #Descripción
+            Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
+            #Botón
+            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self)).place(x=root.winfo_width()/2-170, y=60)
 
-        if len(lista) == 0:
-            Label(mainFrame, text='No hay mantenimientos pendientes.', fg="#aad400" ,bg="#ffffff", font=("Noto Sans", "11", "normal")).place(x=700, y=60)
-        else:
-            tabla2 = crearTabla(['Descripción','Fecha','Estado','Responsable'],listaId,[200, 70, 100, 100], lista, mainFrame, 10, '')
-            tabla2.place(x=700, y=60)
-
-            Button(mainFrame, text='Marcar como realizado', command=lambda: self.realizarMantenimiento(self.tabla.focus())).place(x=700, y=300)
-
-            Button(mainFrame, text='Marcar como cancelado', command=lambda: self.cancelarMantenimiento(self.tabla.focus())).place(x=900, y=300)
-
-            Button(mainFrame, text='Ver más',command=lambda: self.displayMaintenance(tabla2.focus())).place(x=1100, y=300)
+        canvasprogrammedMaintenances.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        scrollbarprogrammedMaintenances.pack(side="right", fill="y")
+        
+        prueba = ScrollableFrame(mainFrame, width=50, height=50,x=600, y=500)
+        Label(prueba.scrollableFrame, text='lispias', fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), justify='left').place(x=0, y=0)
+        prueba.place(x=600, y=500)
 
     def ActualizarAreas(self, event):
         #print(self.departamento2.current())
@@ -1335,77 +1393,78 @@ class Mantenimientos(Crm):
         #print(self.listaAreas[self.area.current()][0])
         
         for x in self.listaEquipos:
-            self.tabla.insert('', 0,id=x[0], text = x[1], values =x[2])
+            self.tabla.insert('', 0,id=x[0], text = x[1], values =x[2], tags=("mytag","color"))
 
     def actualizarActividades(self, *event):
-        print("Llegue aqui")
         id = self.tabla.focus()
         self.listaActividadesAsignadas = actividades.buscarPorEquipo(id)
-        print(self.listaActividadesAsignadas)
         if len(self.listaActividadesAsignadas) < 1:
             self.listaActividadesAsignadas =(['','Equipo sin actividades'],)
         self.tablaActividadesAsignadas.delete(*self.tablaActividadesAsignadas.get_children())        
         for x in self.listaActividadesAsignadas:
-            print(x)
             self.tablaActividadesAsignadas.insert('', 0, id= x[0], values = x[2], text = x[1])
 
     def nuevo(self):
         global mainFrame
         clearMainFrame()
         
+        self.varRepeat = IntVar()
+        
+        self.newMaintenance = mantenimientos.Maintenance(type=mantenimientos.Preventive)
+        
         #Tittle
-        Label(mainFrame, text='Mantenimiento preventivo', bg="#ffffff", font=("Noto Sans", "11", "bold")).place(x=10, y=10)
+        Label(mainFrame, text='Mantenimiento preventivo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
 
         #Date
-        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=40)
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=40)
         today = datetime.now()
-        self.cal = Calendar(mainFrame, font=("Noto Sans", "9", "normal"),bg="#ffffff", selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')))
+        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),bg="#ffffff", selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')))
         self.cal.place(x=10, y=70)
 
         #Estado------------
         self.listaEstados=[mantenimientos.Done, mantenimientos.Programmed]
-        Label(mainFrame, text='Estado', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=280)
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=280)
         self.estado = ttk.Combobox(mainFrame, state='readonly',values=self.listaEstados)
         self.estado.place(x=10, y=310)
 
         #Responsible
-        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=340)
+        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=340)
         self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = empleados.ver('nombre'))
         self.responsible.place(x=10, y=370)
 
         #Repeat
-        self.repeatOn = Checkbutton(mainFrame, bg="#ffffff", text="Repetir cada", font=("Noto Sans", "10", "normal"))
+        self.repeatOn = Checkbutton(mainFrame, bg="#ffffff", text="Repetir cada", font=("Segoe UI", "10", "normal"), variable=self.varRepeat, onvalue=1, offvalue=0)
         self.repeatOn.place(x=10, y=400)
         self.repeat = Entry(mainFrame, width=5, highlightthickness=2)
         self.repeat.place(x=120, y=400)
-        Label(mainFrame, text='días', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=160, y=400)
+        Label(mainFrame, text='días', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=160, y=400)
 
         #Description
-        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=430)
-        self.description = Text(mainFrame, width=40, height=9, font=("Noto Sans", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=430)
+        self.description = Text(mainFrame, width=40, height=9, font=("Segoe UI", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
         self.description.place(x=10, y=460)
 
-        Button(mainFrame, text='Guardar',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveCorrective).place(x=root.winfo_width()-100, y=10)
+        Button(mainFrame, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.nuevoGuardar).place(x=root.winfo_width()-100, y=10)
 
         #Departamento
         self.listaDepartamentos = areas.getDepartamentos()
         self.listaNombresDepartamentos=[]
         for x in self.listaDepartamentos:
             self.listaNombresDepartamentos.append(x[1])
-        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=400, y=10)
+        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=10)
         self.departamento = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresDepartamentos)
         self.departamento.bind("<<ComboboxSelected>>", self.ActualizarAreas)
         self.departamento.place(x=400, y=40)
 
         #Area
         self.listaNombresAreas=[]
-        Label(mainFrame, text='Área', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=600, y=10)
+        Label(mainFrame, text='Área', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=600, y=10)
         self.area = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresAreas)
         self.area.bind("<<ComboboxSelected>>", self.ActualizarEquipos)
         self.area.place(x=600, y=40)
 
         #Plants table
-        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=400, y=80)
+        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=80)
         self.tabla = crearTabla(
             ['Nombre', 'Descripción'],
             [1,],
@@ -1418,7 +1477,7 @@ class Mantenimientos(Crm):
         self.tabla.place(x=400, y=110)
 
         #Activities table
-        Label(mainFrame, text='Actividades', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=400, y=340)
+        Label(mainFrame, text='Actividades', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=340)
         self.tablaActividadesAsignadas = crearTabla(
             ['Nombre', 'Descripción'],
             [1,],
@@ -1432,25 +1491,17 @@ class Mantenimientos(Crm):
         self.tablaActividadesAsignadas.place(x=400, y=370)
 
         #Botón para asignar actividad
-        #Button(self.frameA, text='+', command = self.asignarActividad).grid(row=1, column=7)
+        Button(mainFrame, text=' + ',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command = self.asignarActividad).place(x=650, y=600)
 
         #Botón para eliminar actividad asignada
         #Button(self.frameA, text='-', command = self.eliminarActividadAsignada).grid(row=2, column=7)
 
         #Tabla de equipos
-        # self.tablaEquipos = ttk.Treeview(self.frameA, height = 10, columns = ('nombre','descripcion'), selectmode = 'browse')
-        # self.tablaEquipos.heading('#0', text='Id', anchor=CENTER)
-        # self.tablaEquipos.heading('#1', text='Nombre', anchor=CENTER)
-        # self.tablaEquipos.heading('#2', text='Descripción', anchor=CENTER)
-        # self.tablaEquipos.column('#0', minwidth=0, width=40)
-        # self.tablaEquipos.column('#1', minwidth=0, width=120)
-        # self.tablaEquipos.column('#2', minwidth=0, width=120)
+        self.activitiesTable = ScrollableFrame(mainFrame, x=800, y=10, width=300, height=root.winfo_height()-100)
+        self.activitiesTable.place(800, 10)
+        # self.tablaEquipos = crearTabla(['Nombre','Descripción'],[0,],[120,120],[['Nd','']],mainFrame,10,'')
+        # self.tablaEquipos.place(x=800,y=10)
 
-        # lista = [('','Seleccione un area y departamento','','','')]
-        # for x in lista:
-        #     self.tabla.insert('', 0, values = (x[1],x[4]), text = x[0],tags=("mytag",))
-
-        # self.tablaEquipos.grid(row=0, column=8, pady=5, padx=5, rowspan=3)
         # self.listaEquiposSeleccionados = []
         # self.listaActividadesSeleccionadas = []
 
@@ -1461,45 +1512,45 @@ class Mantenimientos(Crm):
         self.selectedPlants = []
 
         #Tittle
-        Label(mainFrame, text='Mantenimiento correctivo', bg="#ffffff", font=("Noto Sans", "11", "bold")).place(x=10, y=10)
+        Label(mainFrame, text='Mantenimiento correctivo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
 
         #Date
-        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=40)
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=40)
         today = datetime.now()
-        self.cal = Calendar(mainFrame, font=("Noto Sans", "9", "normal"),bg="#ffffff", selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')))
+        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),bg="#ffffff", selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')))
         self.cal.place(x=10, y=70)
 
         #Responsible
-        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=280)
+        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=280)
         self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = empleados.ver('nombre'))
         self.responsible.place(x=10, y=310)
 
         #Description
-        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=10, y=350)
-        self.description = Text(mainFrame, width=40, height=13, font=("Noto Sans", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=350)
+        self.description = Text(mainFrame, width=40, height=13, font=("Segoe UI", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
         self.description.place(x=10, y=380)
 
-        Button(mainFrame, text='Guardar',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveCorrective).place(x=root.winfo_width()-100, y=10)
+        Button(mainFrame, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveCorrective).place(x=root.winfo_width()-100, y=10)
 
         #Departamento
         self.listaDepartamentos = areas.getDepartamentos()
         self.listaNombresDepartamentos=[]
         for x in self.listaDepartamentos:
             self.listaNombresDepartamentos.append(x[1])
-        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=400, y=10)
+        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=10)
         self.departamento = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresDepartamentos)
         self.departamento.bind("<<ComboboxSelected>>", self.ActualizarAreas)
         self.departamento.place(x=400, y=40)
 
         #Area
         self.listaNombresAreas=[]
-        Label(mainFrame, text='Área', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=600, y=10)
+        Label(mainFrame, text='Área', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=600, y=10)
         self.area = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresAreas)
         self.area.bind("<<ComboboxSelected>>", self.ActualizarEquipos)
         self.area.place(x=600, y=40)
 
         #Plants table
-        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=400, y=80)
+        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=80)
         self.tabla = crearTabla(
             ['Nombre', 'Descripción'],
             [1,],
@@ -1511,10 +1562,10 @@ class Mantenimientos(Crm):
         )
         self.tabla.place(x=400, y=110)
 
-        Button(mainFrame, text='Seleccionar equipo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.selectPlant).place(x=400, y=350)
+        Button(mainFrame, text='Seleccionar equipo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.selectPlant).place(x=400, y=350)
 
         #Plants table
-        Label(mainFrame, text='Equipos seleccionados', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=800, y=80)
+        Label(mainFrame, text='Equipos seleccionados', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=800, y=80)
         self.selectedPlantsTable = crearTabla(
             ['Nombre', 'Descripción'],
             [1,],
@@ -1526,7 +1577,7 @@ class Mantenimientos(Crm):
         )
         self.selectedPlantsTable.place(x=800, y=110)
 
-        Button(mainFrame, text='Deseleccionar equipo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.deselectPlant).place(x=800, y=350)
+        Button(mainFrame, text='Deseleccionar equipo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.deselectPlant).place(x=800, y=350)
 
     def selectPlant(self):
         plantId = self.tabla.focus()
@@ -1569,59 +1620,59 @@ class Mantenimientos(Crm):
         self.displayMaintenance(maintenanceData.id)
 
     def asignarActividad(self):
-        #Obtener equipo
-        id = self.tabla.focus()
-        text = self.tabla.item(id, option='text')
-        equipoNuevo = equipos.buscar(text)
-        if not equipoNuevo in self.listaEquiposSeleccionados:
-            self.listaEquiposSeleccionados.append(equipoNuevo)
+        #Get activity
+        newActivity = actividades.Activity(id = self.tablaActividadesAsignadas.focus(), assigned= True)
+        if newActivity not in self.newMaintenance.activities:
+            self.newMaintenance.activities.append(newActivity)
+            self.newMaintenance.activities.sort(key=getPlant)
 
-        #Obtener actividad
-        id = self.tablaActividadesAsignadas.focus()
-        text = self.tablaActividadesAsignadas.item(id, option='text')
-        actividadNueva = actividades.buscarActividadAsignada(text)
-        if not actividadNueva in self.listaActividadesSeleccionadas:
-            self.listaActividadesSeleccionadas.append(actividadNueva)
+        self.activitiesTable.clear()
+        for activity in self.newMaintenance.activities:
+            actualFrame = Frame(self.activitiesTable.scrollableFrame)
+            actualFrame.config(bg=colorGray, highlightthickness=0, width=290, height=100)
+            actualFrame.pack(pady=5, padx=5)
+            #Plant
+            Label(actualFrame, text=activity.plant.department + ' > ' + activity.plant.area + ' > '+ activity.plant.name, fg='#444444', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='left').place(x=10, y=10)
+            #Name
+            Label(actualFrame, text=activity.name, fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=30)
+            #Description
+            Label(actualFrame, text=activity.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=270, justify='left').place(x=10, y=50)
+            #Button
+            Button(actualFrame, text=' - ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=deleteActivityFromList(self.newMaintenance.activities.index(activity), self)).place(x=260, y=10)
 
-        #Actualizar tabla
-        if len(self.listaEquiposSeleccionados) == 0:
-            self.listaEquiposSeleccionados = [[' ','Sin equipos',' ']]
-        self.tablaEquipos.delete(*self.tablaEquipos.get_children())
-        
-        for x in self.listaEquiposSeleccionados:
-            item = self.tablaEquipos.insert('', 0, values = (x[1],x[2]), text = x[0],tags=("mytag",))
-            #print(self.listaActividadesSeleccionadas)
-            for y in self.listaActividadesSeleccionadas:
-                if y[4] == x[0]:
-                    self.tablaEquipos.insert(item, 0, text=y[0], values=(y[1],y[2]), iid=y[0])
+    def eliminarActividadAsignada(self, activity):
+        self.newMaintenance.activities.pop(activity)
 
-    def eliminarActividadAsignada(self):
-        id = self.tablaEquipos.focus()
-        actividadBorrar = actividades.buscarActividadAsignada(id)[0]
-        self.listaActividadesSeleccionadas.pop(self.listaActividadesSeleccionadas.index(actividadBorrar))
-
-        #Actualizar tabla
-        if len(self.listaEquiposSeleccionados) == 0:
-            self.listaEquiposSeleccionados = [[' ','Sin equipos',' ']]
-        self.tablaEquipos.delete(*self.tablaEquipos.get_children())
-        
-        for x in self.listaEquiposSeleccionados:
-            item = self.tablaEquipos.insert('', 0, values = (x[1],x[2]), text = x[0],tags=("mytag",))
-            #print(self.listaActividadesSeleccionadas)
-            for y in self.listaActividadesSeleccionadas:
-                if y[4] == x[0]:
-                    self.tablaEquipos.insert(item, 0, text=y[0], values=(y[1],y[2]), iid=y[0])
+        self.activitiesTable.clear()
+        for activity in self.newMaintenance.activities:
+            actualFrame = Frame(self.activitiesTable.scrollableFrame)
+            actualFrame.config(bg=colorGray, highlightthickness=0, width=290, height=100)
+            actualFrame.pack(pady=5, padx=5)
+            #Plant
+            Label(actualFrame, text=activity.plant.department + ' > ' + activity.plant.area + ' > '+ activity.plant.name, fg='#444444', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='left').place(x=10, y=10)
+            #Name
+            Label(actualFrame, text=activity.name, fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=30)
+            #Description
+            Label(actualFrame, text=activity.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=270, justify='left').place(x=10, y=50)
+            #Button
+            Button(actualFrame, text=' - ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=deleteActivityFromList(self.newMaintenance.activities.index(activity), self)).place(x=260, y=10)
 
     def nuevoGuardar(self):
-        fecha = self.cal.selection_get()
-        responsable = self.listaEmpleados[self.responsable.current()][0]
-        mantenimientos.nuevo(fecha, self.estado.get(), responsable, self.comentario.get('1.0',END), self.tipo.get(), self.tiempo.get())
-        id = mantenimientos.ultimoMantenimiento()
-        for x in self.listaActividadesSeleccionadas:
-            mantenimientos.agregarActividad(id, x[0])
-        texto = 'El mantenimiento ha sido registrado.'
+        self.newMaintenance.date = self.cal.selection_get()
+        self.newMaintenance.status = self.estado.get()
+        self.newMaintenance.responsible = empleados.ver()[self.responsible.current()][0]
+        self.newMaintenance.description = self.description.get('1.0',END)
+        self.newMaintenance.type = mantenimientos.Preventive
+        if (self.varRepeat.get()):
+            self.newMaintenance.repeat = self.repeat.get()
+        else:
+            self.newMaintenance.repeat = None
+
+        self.newMaintenance.save()
+        
+        texto = f"El mantenimiento ha sido registrado con id {self.newMaintenance.id}."
         messagebox.showinfo(title='Mantenimiento registrado', message=texto)
-        self.ventana.destroy()
+        self.displayMaintenance(self.newMaintenance.id)
 
     def programar(self, id=0):
         if id == 0:
@@ -1664,27 +1715,16 @@ class Mantenimientos(Crm):
             if messagebox.askyesno(title='¿Programar siguiente?', message='¿Desea programar el siguiente mantenimiento?'):
                 self.programar(select.id)
 
-    def cancelarMantenimiento(self, id):
-        if id == '':
-            messagebox.showwarning(title='No hay nada seleccionado', message='Seleccione un mantenimiento.')
-        else:
-            select = mantenimientos.buscar(id)
-            fechaMant = select[1].split('/')
-            fechaMant = date(int(fechaMant[2]), int(fechaMant[1]), int(fechaMant[0]))
-            mantenimientos.editar(id, fechaMant, 'Cancelado', select[3], select[4], select[5], select[6])
-            messagebox.showinfo(title='Editado con éxito', message='El mantenimiento ha sido modificado correctamente.')
+    def cancelarMantenimiento(self, maintenance):
+        maintenance.cancel()
+        messagebox.showinfo(title='Editado con éxito', message='El mantenimiento ha sido modificado correctamente.')
+        self.displayMaintenance(maintenance.id)
 
-    def eliminarMantenimiento(self, id):
-        if id == '':
-            messagebox.showwarning(title='No hay nada seleccionado', message='Seleccione un mantenimiento.')
-        else:
-            select = mantenimientos.buscar(id)[0]
-            if messagebox.askyesno(title='Eliminar', message='¿En verdad desea eliminar el mantenimiento?'):
-                actividades = mantenimientos.buscarActividades(id)
-                for i in actividades:
-                    mantenimientos.eliminarActividad(i[0])
-                mantenimientos.eliminar(id)
-                messagebox.showinfo(title='Eliminado', message='El registro fue eliminado correctamente.')
+    def eliminarMantenimiento(self, maintenance):
+        if messagebox.askyesno(title='Eliminar', message='¿En verdad desea eliminar el mantenimiento?'):
+            maintenance.delete()
+            messagebox.showinfo(title='Eliminado', message='El registro fue eliminado correctamente.')
+            self.main()
 
     def displayMaintenance(self, id):
         global mainFrame
@@ -1701,7 +1741,7 @@ class Mantenimientos(Crm):
         Label(mainFrame, 
             text='Mantenimiento ID '+str(sel.id),
             bg="#ffffff",
-            font=("Noto Sans", "11", "bold")).place(x=10, y=10)
+            font=("Segoe UI", "11", "bold")).place(x=10, y=10)
 
         self.info = Frame(mainFrame)
         self.info.config(bg="#ffffff", width=root.winfo_width()*0.2, height=root.winfo_height()-50)
@@ -1714,23 +1754,27 @@ class Mantenimientos(Crm):
             text = ' el '
         else:
             text = ' el '
-        Label(self.info, text=sel.status+text+sel.date.strftime('%d/%m/%Y'),fg='#666666', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=0, y=0)
+        Label(self.info, text=sel.status+text+sel.date.strftime('%d/%m/%Y'),fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=0)
         #Label responsable
-        Label(self.info, text='Asignado a '+empleados.buscar(sel.responsible)[2],fg='#666666', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=0, y=30)
+        Label(self.info, text='Asignado a '+empleados.buscar(sel.responsible)[2],fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=30)
         #Label Tipo de mantenimiento
-        Label(self.info, text='Mantenimiento '+sel.type,fg='#666666', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=0, y=60)
+        Label(self.info, text='Mantenimiento '+sel.type,fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=60)
         if sel.type == 'Preventivo':
-            Label(self.info, text='Repetir cada '+str(sel.repeat)+' días',fg='#666666', bg="#ffffff", font=("Noto Sans", "10", "normal")).place(x=0, y=90)
+            Label(self.info, text='Repetir cada '+str(sel.repeat)+' días',fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=90)
         #Label descripción mantenimiento
-        Label(self.info, text=sel.description, bg="#ffffff", font=("Noto Sans", "11", "normal"), wraplength=root.winfo_width()*0.18, justify='left').place(x=0, y=120)
+        Label(self.info, text=sel.description, bg="#ffffff", font=("Segoe UI", "10", "normal"), wraplength=root.winfo_width()*0.18, justify='left').place(x=0, y=120)
         #Boton realizar
         if sel.status == 'Programado':
-            Button(self.info, text='Realizar', font=("Noto Sans", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.realizarMantenimiento(id)).place(x=0, y=root.winfo_height()-150)
+            Button(self.info, text='Realizar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.realizarMantenimiento(id)).place(x=0, y=root.winfo_height()-150)
         #Boton Programar
         if sel.status == mantenimientos.Done and sel.next == None and sel.type == 'Preventivo':
-            Button(self.info, text='Programar', font=("Noto Sans", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.programar(id)).place(x=0, y=root.winfo_height()-150)
+            Button(self.info, text='Programar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.programar(id)).place(x=0, y=root.winfo_height()-150)
         #Boton cancelar
-        Button(self.info, text='Cancelar', font=("Noto Sans", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.cancelarMantenimiento(id)).place(x=70, y=root.winfo_height()-150)
+        if sel.status != mantenimientos.Cancelled:
+            Button(self.info, text='Cancelar', font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.cancelarMantenimiento(sel)).place(x=70, y=root.winfo_height()-150)
+        #Delete Button
+        if sel.status == mantenimientos.Cancelled:
+            Button(self.info, text='Eliminar', font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.eliminarMantenimiento(sel)).place(x=0, y=root.winfo_height()-150)
 
         if sel.type == mantenimientos.Preventive:
             listActivities = []            
@@ -1741,7 +1785,7 @@ class Mantenimientos(Crm):
                 else:
                     grouped = False
                     for plant in listActivities:
-                        if activity.plant == plant[0].plant:
+                        if activity.plant.id == plant[0].plant.id:
                             listActivities[listActivities.index(plant)].append(activity)
                             grouped = True
                     if not grouped:
@@ -1754,18 +1798,31 @@ class Mantenimientos(Crm):
                     width=250,
                     height=root.winfo_height()-50)
                 framePlant.place(x=root.winfo_width()*0.2+listActivities.index(plant)*250, y=0)
-                
-                thisPlant = equipos.buscar(plant[0].plant)
+                thisPlant = equipos.buscar(plant[0].plant.id)
                 area = areas.buscar(thisPlant[3])
-                Label(framePlant, text=area[4], fg='#666666', bg="#f2f2f2", font=("Noto Sans", "9", "normal")).place(x=10, y=10)
-                Label(framePlant, text=area[1], fg='#666666', bg="#f2f2f2", font=("Noto Sans", "9", "bold")).place(x=10+len(area[4]*10), y=10)
-                Label(framePlant, text=thisPlant[1], fg='#000000', bg="#f2f2f2", font=("Noto Sans", "10", "bold")).place(x=10, y=40)
-                Label(framePlant, text=thisPlant[2], fg='#000000', bg="#f2f2f2", font=("Noto Sans", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
+                Label(framePlant, text=area[4], fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
+                Label(framePlant, text=area[1], fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(area[4]*10), y=10)
+                Label(framePlant, text=thisPlant[1], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=10, y=40)
+                Label(framePlant, text=thisPlant[2], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
                 for activity in plant:
                     #Label nombre actividad
-                    Label(framePlant, text=activity.name, fg='#111111', bg="#f2f2f2", font=("Noto Sans", "8", "bold"), wraplength=180, justify='left').place(x=10, y=110+plant.index(activity)*60)
+                    Label(framePlant, text=activity.name, fg='#111111', bg="#f2f2f2", font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=110+plant.index(activity)*60)
                     #Label descripcion actividad
-                    Label(framePlant, text=activity.description, fg='#111111', bg="#f2f2f2", font=("Noto Sans", "8", "normal"), wraplength=180, justify='left').place(x=10, y=130+plant.index(activity)*60)
+                    Label(framePlant, text=activity.description, fg='#111111', bg="#f2f2f2", font=("Segoe UI", "8", "normal"), wraplength=180, justify='left').place(x=10, y=130+plant.index(activity)*60)
+        else:
+            for plant in sel.plants:
+                framePlant = Frame(mainFrame)
+                framePlant.config(bg="#f2f2f2",
+                    width=250,
+                    height=root.winfo_height()-50)
+                framePlant.place(x=root.winfo_width()*0.2+sel.plants.index(plant)*250, y=0)
+                
+                thisPlant = equipos.buscar(plant)
+                area = areas.buscar(thisPlant[3])
+                Label(framePlant, text=area[4], fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
+                Label(framePlant, text=area[1], fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(area[4]*10), y=10)
+                Label(framePlant, text=thisPlant[1], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=10, y=40)
+                Label(framePlant, text=thisPlant[2], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
 
 if __name__ == '__main__':
     aplicacion = Crm()

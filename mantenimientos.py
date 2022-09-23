@@ -59,6 +59,7 @@ class Maintenance:
         else: #If isnt a new maintenance
             editar(self.id, self.date, self.status, self.responsible, self.description, self.type, self.repeat, self.previous, self.next)
             print(f"Maintenance with ID {self.id} was updated")
+            return 0
         if self.type == Corrective:
             for plant in self.plants:
                 if findCorrectiveActivity(plant[0]):
@@ -70,7 +71,8 @@ class Maintenance:
                     print(f"Plant Id {plant[0]} added")
         elif self.type == Preventive:
             for i in self.activities:
-                i.save()
+                agregarActividad(self.id, i.id)
+                print(f"Activity Id {i.id} added")
 
     def scheduleNext(self):
         if self.status == Done and self.repeat != None and self.next==None:
@@ -112,14 +114,26 @@ class Maintenance:
             for i in buscarActividades(self.id):
                 self.activities.append(Activity(id = i[2], assigned = True))
         elif self.type == Corrective: #If is a corrective maintenance
-            pass
+            self.plants = []
+            for i in buscarActividades(self.id):
+                self.plants.append(Activity(id = i[2], assigned = True).plant)
         self.repeat = rawData[6]
         self.previous = rawData[7]
         self.next = rawData[8]
         #print(f"Maintenance with ID {id} was found")
         return 0
 
+    def cancel(self):
+        self.status = Cancelled
+        self.date = datetime.now()
+        self.save()
+        return 0
 
+    def delete(self):
+        for activity in buscarActividades(self.id):
+            eliminarActividad(activity[0])
+        eliminar(self.id)
+        return 0
 
 #Consultas SQL
 def nuevo(fecha, estado, responsable, comentario, tipo, tiempoProgramado, anteriorId, siguienteId):
@@ -187,13 +201,27 @@ def buscarTodos():
     resultado = sql.peticion(instruccion)
     return resultado
 
+def getMaintenanceDate(maintenance):
+    return maintenance.date
+
 def getAll():
     """Return all the maintenances in the database"""
-    instruction = "SELECT id FROM mantenimientos ORDER BY id DESC"
+    instruction = "SELECT id FROM mantenimientos"
     listIds = sql.peticion(instruction)
     listMaintenances = []
     for i in listIds:
         listMaintenances.append(Maintenance(i[0]))
+    listMaintenances.sort(key=getMaintenanceDate, reverse=True)
+    return listMaintenances
+
+def getProgrammed():
+    """Return all maintenances in the database where status is Programmed"""
+    instruction = f"SELECT id FROM mantenimientos WHERE estado='{Programmed}'"
+    listIds = sql.peticion(instruction)
+    listMaintenances = []
+    for i in listIds:
+        listMaintenances.append(Maintenance(i[0]))
+    listMaintenances.sort(key=getMaintenanceDate)
     return listMaintenances
 
 def eliminar(id):
@@ -279,8 +307,9 @@ LEFT JOIN equipos ON actividadesAsignadas.idEquipo = equipos.id WHERE equipos.id
     return listaDepurada
 
 if __name__ == '__main__':
-    listMan = getAll()
-    print(listMan[0].id)
+    listMan = getProgrammed()
+    for i in listMan:
+        print(i.date.strftime('%d %m %Y'))
 
 
 

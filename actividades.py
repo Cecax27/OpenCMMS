@@ -1,4 +1,5 @@
 from modules import sql
+import equipos
 
 #Classes
 class Activity:
@@ -10,6 +11,12 @@ class Activity:
         self.name = ''
         self.description = ''
         self.time = None
+        
+    def __repr__(self):
+        info = f"Activity ID {self.id}\n{self.name}"
+        if hasattr(self, 'plant'):
+            info += f"\nAssigned to plant ID {self.plant}"
+        return info
 
     def findById(self, id, assigned = False):
         if assigned:
@@ -26,7 +33,7 @@ class Activity:
         else:
             self.time = rawData[3]
         if assigned:
-            self.plant = rawData[4]
+            self.plant = equipos.Plant(id = rawData[4])
 
     def save(self):
         """Save the activity in the database"""
@@ -44,6 +51,9 @@ class Activity:
             else: #If is a old activity
                 modificar(self.id, self.name, self.description, self.time)
                 print(f"The activity with ID {self.id} was updated")
+                
+    def delete(self):
+        pass
 
         
 

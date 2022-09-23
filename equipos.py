@@ -1,4 +1,31 @@
 from modules import sql
+import areas
+
+class Plant:
+    def __init__(self, id = 0):
+        self.id = id
+        if self.id != 0:
+            self.findById(self.id)
+            return
+        self.name = ''
+        self.description = ''
+        self.area = 0
+        self.department = 0
+        
+    def __repr__(self):
+        info = f"Plant ID {self.id}\n{self.name}"
+        return info
+
+    def findById(self, id):
+        rawData = buscar(id)
+        if rawData == None:
+            print(f"Plant with ID {id} was not found")
+            return 1
+        self.name = rawData[1]
+        self.description = rawData[2]
+        rawDataArea = areas.buscar(rawData[3])
+        self.area = rawDataArea[1]
+        self.department = rawDataArea[4]
 
 def new(nombre, descripcion, area):
     """Inserta un nuevo equipo en la base de datos.
