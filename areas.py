@@ -1,4 +1,48 @@
 from modules import sql
+import empleados
+
+#Classes
+class Area():
+    
+    def __init__(self, id = 0):
+        self.id = id
+        if self.id != 0:
+            self.findById(self.id)
+            return
+        self.name = ''
+        self.description = ''
+        self.responsible = empleados.Employer()
+        self.department = Department()
+        
+    def __repr__(self) -> str:
+        return f"Area ID {self.id}:\n\tName: {self.name}\n\tDescription: {self.description}\n\tResponsible: {self.responsible.id}\n\tDepartment: {self.department.id}"
+            
+    def findById(self, id):
+        self.id = id
+        rawData = buscar(id)
+        self.name = rawData[1]
+        self.description = rawData[2]
+        self.responsible = empleados.Employer(id = rawData[3])
+        self.department = Department(id = rawData[4])
+        
+class Department():
+    
+    def __init__(self, id = 0):
+        self.id = id
+        if self.id != 0:
+            self.findById(self.id)
+            return
+        self.name = ''
+    
+    def __repr__(self) -> str:
+        return f"Department ID {self.id}:\n\tName: {self.name}"
+
+    def findById(self, id):
+        self.id = id
+        rawData = buscarDepartamento(id)
+        self.name = rawData[1]
+    
+        
 
 def new(nombre, descripcion, responsable, departamento):
     peticion = f"INSERT INTO areas VALUES (NULL, '{nombre}', '{descripcion}', {responsable}, {departamento})"
@@ -43,7 +87,7 @@ def ver():
         lista[lista.index(x)]=list(x)
         x = list(x)
 
-        peticion = f"SELECT nombre FROM empleados WHERE clave = {x[3]}"
+        peticion = f"SELECT nombre FROM empleados WHERE id = {x[3]}"
         resultado = sql.peticion(peticion)
         indice = lista.index(x)
         lista[indice][3] = resultado[0][0]
@@ -59,26 +103,12 @@ def buscar(id):
 
     peticion=f"SELECT * FROM areas WHERE id='{id}'"
     lista = sql.peticion(peticion)
-
-    for x in lista:
-        lista[lista.index(x)]=list(x)
-        x = list(x)
-
-        peticion = f"SELECT nombre FROM empleados WHERE clave = {x[3]}"
-        resultado = sql.peticion(peticion)
-        indice = lista.index(x)
-        lista[indice][3] = resultado[0][0]
-
-        instruccion = f"SELECT nombre FROM departamentos WHERE id = {x[4]}"
-        resultado = sql.peticion(instruccion)
-        lista[indice][4] = resultado[0][0]
-
     return lista[0]
 
 def buscarDepartamento(id):
     peticion=f"SELECT * from departamentos WHERE id = {id}"
     resultado = sql.peticion(peticion)
-    return resultado
+    return resultado[0]
 
 
 def modificar(idNo, nombre, descripcion, responsable, departamento):
@@ -91,9 +121,17 @@ def areasEnDepartamento(id):
     resultado = len(sql.peticion(peticion))
     return resultado
 
+def findByEmployerId(id):
+    """Find all the areas with an employer id"""
+    areasList = []
+    for id in sql.peticion(f"SELECT id FROM areas WHERE responsable = {id}"):
+        areasList.append(Area(id = id[0]))
+    return areasList
+
 #Para hacer pruebas
 if __name__ == '__main__':
-    areasEnDepartamento(2)
+    findByEmployerId(15)
+    
 
 
         

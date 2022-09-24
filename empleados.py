@@ -1,5 +1,23 @@
 from modules import sql
 
+#Classes
+class Employer():
+    
+    def __init__(self, id = 0):
+        """When creating anew employer object, you can give the id of an existing employer or create a blank object"""
+        self.id = id
+        if self.id != 0:
+            self.findById(self.id)
+        
+    def __repr__(self):
+        return f"Employer Id {self.id}:\n\tName: {self.name}\n\tKey: {self.key}\n"
+            
+    def findById(self, id):
+        rawData = buscar(id)
+        self.key = rawData[1]
+        self.name = rawData[2]
+        
+
 def new(clave, nombre):
     """Agrega un nuevo empleado en la base de datos.
     Argumentos:
@@ -26,5 +44,13 @@ def buscar(id):
     resultado = sql.peticion(peticion)
     return resultado[0]
 
+def getAll():
+    peticion = "SELECT id FROM empleados"
+    resultado = sql.peticion(peticion)
+    list = []
+    for i in resultado:
+        list.append(Employer(id = i[0]))
+    return list
+
 if __name__ == '__main__':
-    print(ver('nombre'))
+    print(getAll())

@@ -40,6 +40,9 @@ class Maintenance:
             self.status = Done
             self.type = Corrective
             self.plants = []
+            
+    def __repr__(self) -> str:
+        return f"Maintenance with Id {self.id}:\n\tDescription: {self.description}\n"
 
     def save(self):
         """Save the maintenance in the database"""
@@ -157,6 +160,26 @@ def nuevo(fecha, estado, responsable, comentario, tipo, tiempoProgramado, anteri
         siguienteId = 'NULL'
     instruccion = f"INSERT INTO mantenimientos VALUES (NULL, '{fecha}','{estado}',{responsable}, '{comentario}', '{tipo}', {tiempoProgramado}, {anteriorId}, {siguienteId})"
     sql.peticion(instruccion)
+    
+def findPendingMaintenances(employerId = 0):
+    """Find pending maintenances. If you give the employer id, it find pending maintenances for that employer"""
+    if employerId != 0:
+        instruction = f"SELECT id FROM mantenimientos WHERE estado = '{Programmed}' AND responsable = {employerId}"
+        maintenancesList = []
+        for id in sql.peticion(instruction):
+            maintenancesList.append(Maintenance(id = id[0]))
+        return maintenancesList
+    
+def findOverdueMaintenances(employerId = 0):
+    """Find overdue maintenances. If you give the employer id, it find pending maintenances for that employer"""
+    if employerId != 0:
+        instruction = f"SELECT id FROM mantenimientos WHERE estado = '{Programmed}' AND responsable = {employerId}"
+        maintenancesList = []
+        for id in sql.peticion(instruction):
+            newMaintenance = Maintenance(id = id[0])
+            if newMaintenance.date <= datetime.date(datetime.now()):
+                maintenancesList.append(newMaintenance)
+        return maintenancesList
 
 def findCorrectiveActivity(id):
     """Find the id of the activity corrective maintenance of a plant"""
@@ -306,10 +329,32 @@ LEFT JOIN equipos ON actividadesAsignadas.idEquipo = equipos.id WHERE equipos.id
         listaDepurada[listaDepurada.index(maintenance)] = buscar(maintenance)
     return listaDepurada
 
+def find(overdue = False, employerId = 0, status = None):
+    """Find all the maintenances with an employer id"""
+    instruction = f"SELECT id FROM mantenimientos WHERE"
+    restrictionList = []
+    if employerId != 0:
+        restrictionList.append(f" responsable = {employerId} ")
+    if status != None:
+        restrictionList.append(f" estado = '{status}' ")
+    for restriction in restrictionList:
+        instruction += restriction
+        if restrictionList.index(restriction) != len(restrictionList)-1:
+            instruction += "AND"
+    maintenancesList = []
+    for id in sql.peticion(instruction):
+        newMaintenance = Maintenance(id = id[0])
+        if overdue:
+            if newMaintenance.date <= datetime.date(datetime.now()):
+                maintenancesList.append(newMaintenance)
+        else:
+            maintenancesList.append(newMaintenance)
+    return maintenancesList
+        
+    
+
 if __name__ == '__main__':
-    listMan = getProgrammed()
-    for i in listMan:
-        print(i.date.strftime('%d %m %Y'))
+    print(find(status=Programmed, employerId=15))
 
 
 

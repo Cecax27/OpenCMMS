@@ -1,6 +1,8 @@
+from cgitb import text
 from tkinter import *
 import tkinter.ttk as ttk
 from tkinter import messagebox
+from turtle import width
 import empleados
 import equipos
 import actividades
@@ -21,8 +23,6 @@ colorRed = '#c83737'
 colorBlue = '#37abc8'
 colorGray = '#f2f2f2'
 colorDarkGray = '#dadada'
-
-
 
 #Funciones--------
 def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
@@ -71,7 +71,6 @@ def clearMainFrame():
     imgCorrective = PhotoImage(file='img/corrective.png').subsample(8)
     imgPreventive = PhotoImage(file='img/preventive.png').subsample(8)
     
-
     mainFrame.destroy()
     mainFrame = Frame(root)
     mainFrame.config(bg="#ffffff",
@@ -87,7 +86,7 @@ class Crm:
         root = Tk()
         self.root = root
         self.root.state('zoomed') #abrir maximizado
-        self.root.title('Gestión de Mantenimiento GMAO Emman')
+        self.root.title('Gestión de Mantenimiento Emman')
 
         #Objetos--------
         self.objetoDepartamentos = Departamentos()
@@ -95,6 +94,7 @@ class Crm:
         self.objetoEquipos = Equipos(self)
         self.objetoActividades = Actividades()
         self.objetoMantenimientos = Mantenimientos(self)
+        self.objetoEmpleados = Empleados(self)
 
         #Menu---------------------
         root.update()
@@ -180,7 +180,7 @@ class Crm:
             width=12,
             borderwidth=5,
             relief=FLAT,
-            command=self.empleados
+            command=self.objetoEmpleados.main
             ).place(x=5.25*root.winfo_width()/6, y=4)
 
         global barraMenu
@@ -191,7 +191,6 @@ class Crm:
 
         self.mainframe = mainFrame
 
-        
         self.objetoMantenimientos.main()
 
     def actividades(self):
@@ -333,31 +332,6 @@ class Crm:
         self.ventana.destroy()
         self.areas()    
 
-    def empleados(self):
-        self.mainframe.destroy()
-        self.mainframe = Frame(self.root, relief=RIDGE, borderwidth=2)
-        self.mainframe.grid(column=0, row=1)
-
-        lblMain = Label(self.mainframe, text='Empleados')
-        lblMain.grid(column=0, row=0)
-
-        listaEmpleados = empleados.ver()
-        self.tabla = ttk.Treeview(self.mainframe, height = 10, columns = 2, selectmode = 'browse')
-        self.tabla.grid(row = 2, column = 0, columnspan = 3)
-        self.tabla.heading('#0', text='Código', anchor=CENTER)
-        self.tabla.heading('#1', text='Nombre', anchor=CENTER)
-        for x in listaEmpleados:
-            self.tabla.insert('', 0, values = (x[2],), text = x[1])
-
-        self.btnuevo =  Button(self.mainframe, text='Nuevo',command=self.empleadosNuevo)
-        self.btnuevo.grid(column=0,row=3)
-
-        self.bteditar =  Button(self.mainframe, text='Editar',command=self.empleadosEditar)
-        self.bteditar.grid(column=1,row=3)
-
-        self.btborrar =  Button(self.mainframe, text='Eliminar',command=self.empleadosBorrar)
-        self.btborrar.grid(column=2,row=3)
-
     def empleadosNuevo(self):
         self.ventana = Toplevel()
         self.ventana.title('Nuevo empleado')
@@ -375,17 +349,6 @@ class Crm:
         #print(self.nombre.get())
         btGuardar = Button(self.frame, text='Guardar', command= self.empleadosGuardar).grid(column=0, row=6)
         btCancelar = Button(self.frame, text='Cancelar', command=self.ventana.destroy).grid(column=1, row=6)
-
-    def empleadosEditar(self):
-        self.root2 = Tk()
-
-    def empleadosBorrar(self):
-        pass
-
-    def empleadosGuardar(self):
-         empleados.new(self.clave.get(), self.nombre.get())
-         self.ventana.destroy()
-         self.empleados()
 
 class BarraMenu(Crm):
 
@@ -683,14 +646,14 @@ class Areas():
         resultado = areas.buscar(text) 
         #Nombre
         self.nombre.delete(0, "end")
-        self.nombre.insert(0, resultado[0][1])
+        self.nombre.insert(0, resultado[1])
         #Descripcion
         self.descripcion.delete(0, "end")
-        self.descripcion.insert(0, resultado[0][2])
+        self.descripcion.insert(0, resultado[2])
         #Responsable
-        self.responsable.current(self.listaNombres.index(resultado[0][3]))
+        self.responsable.current(self.listaNombres.index(resultado[3]))
         #Departamento
-        self.departamento.current(self.listaNombresDepartamentos.index(resultado[0][4]))
+        self.departamento.current(self.listaNombresDepartamentos.index(resultado[4]))
 
     def editarGuardar(self):
         id = self.tabla.focus()
@@ -1371,10 +1334,6 @@ class Mantenimientos(Crm):
 
         canvasprogrammedMaintenances.pack(side="left", fill="both", expand=True, padx=2, pady=2)
         scrollbarprogrammedMaintenances.pack(side="right", fill="y")
-        
-        prueba = ScrollableFrame(mainFrame, width=50, height=50,x=600, y=500)
-        Label(prueba.scrollableFrame, text='lispias', fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), justify='left').place(x=0, y=0)
-        prueba.place(x=600, y=500)
 
     def ActualizarAreas(self, event):
         #print(self.departamento2.current())
@@ -1799,10 +1758,14 @@ class Mantenimientos(Crm):
                     height=root.winfo_height()-50)
                 framePlant.place(x=root.winfo_width()*0.2+listActivities.index(plant)*250, y=0)
                 thisPlant = equipos.buscar(plant[0].plant.id)
-                area = areas.buscar(thisPlant[3])
-                Label(framePlant, text=area[4], fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
-                Label(framePlant, text=area[1], fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(area[4]*10), y=10)
+                area = areas.Area(thisPlant[3])
+                #Department
+                Label(framePlant, text=area.department.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
+                #Area
+                Label(framePlant, text=area.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(area.department.name*10), y=10)
+                #Plant
                 Label(framePlant, text=thisPlant[1], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=10, y=40)
+                #Description
                 Label(framePlant, text=thisPlant[2], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
                 for activity in plant:
                     #Label nombre actividad
@@ -1817,12 +1780,131 @@ class Mantenimientos(Crm):
                     height=root.winfo_height()-50)
                 framePlant.place(x=root.winfo_width()*0.2+sel.plants.index(plant)*250, y=0)
                 
-                thisPlant = equipos.buscar(plant)
-                area = areas.buscar(thisPlant[3])
-                Label(framePlant, text=area[4], fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
-                Label(framePlant, text=area[1], fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(area[4]*10), y=10)
-                Label(framePlant, text=thisPlant[1], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=10, y=40)
-                Label(framePlant, text=thisPlant[2], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
+                Label(framePlant, text=plant.department.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
+                Label(framePlant, text=plant.area.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(plant.department.name*10), y=10)
+                Label(framePlant, text=plant.name, fg='#000000', bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=10, y=40)
+                Label(framePlant, text=plant.description, fg='#000000', bg="#f2f2f2", font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
+
+def createFunctionToDisplayEmployer(id, object):
+    return lambda: object.parent.objetoEmpleados.displayEmployer(id)
+
+class Empleados():
+    
+    def __init__(self, parent):
+        global root
+        global mainFrame   
+        self.parent = parent
+        self.padre = parent
+    
+    def main(self):
+        clearMainFrame()
+        
+        #Title
+        Label(mainFrame, text='Empleados', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        
+        employerList = empleados.getAll() 
+        
+        employerFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-40, height=root.winfo_height()-130, x=10, y=60)
+        employerFrame.place(x=10, y=40)
+        
+        frameQuantity = int((root.winfo_width()-40)/300)
+        frameSeparation = int(((root.winfo_width()-40)%300)/(frameQuantity*2))
+        
+        for employer in employerList:
+            actualFrame = Frame(employerFrame.scrollableFrame)
+            actualFrame.config(bg=colorGray, highlightthickness=0, width=300, height=200)
+            actualFrame.grid(column=employerList.index(employer)%frameQuantity, row=int(employerList.index(employer)/frameQuantity), padx=frameSeparation, pady=10)
+            
+            #Name
+            Label(actualFrame, text=employer.name, fg='#111111', bg=colorGray, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=20, y=20)
+            
+            #Key
+            Label(actualFrame, text=employer.key, fg='#444444', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='left').place(x=20, y=40)
+            
+            #Pending maintenances
+            pendingMaintenances = len(mantenimientos.findPendingMaintenances(employerId= employer.id))
+            textColor= colorBlue
+            Label(actualFrame, text=pendingMaintenances, fg=textColor, bg=colorGray, font=("Segoe UI", "16", "normal"), wraplength=300, justify='center').place(x=65, y=90, anchor=CENTER)
+            Label(actualFrame, text='Mantenimientos\nprogramados', fg='#666666', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='center').place(x=65, y=120, anchor=CENTER)
+            
+            #Overdue maintenances
+            overdueMaintenances = len(mantenimientos.findOverdueMaintenances(employerId= employer.id))
+            if overdueMaintenances == 0: textColor = colorGreen
+            elif overdueMaintenances < 3: textColor = colorBlue
+            else: textColor = colorRed
+            Label(actualFrame, text=overdueMaintenances, fg=textColor, bg=colorGray, font=("Segoe UI", "16", "normal"), wraplength=300, justify='center').place(x=215, y=90, anchor=CENTER)
+            Label(actualFrame, text='Mantenimientos\natrasados', fg='#666666', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='center').place(x=215, y=120, anchor=CENTER)
+            
+            #Button
+            Button(actualFrame, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=createFunctionToDisplayEmployer(employer.id, self)).place(x=230, y=160)
+            
+    def displayEmployer(self, id):
+        clearMainFrame()
+        
+        #Title
+        Label(mainFrame, text='Empleados', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        
+        employer = empleados.Employer(id = id)
+        
+        #Button back
+        Button(mainFrame, text=' ← Regresar ',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.main).place(x=10, y=40)
+        
+        #Name
+        Label(mainFrame, text=employer.name, fg='#444444', bg='#ffffff', font=("Segoe UI", "16", "normal"), wraplength=300, justify='left').place(x=10, y=80)
+        #Key
+        Label(mainFrame, text='Clave: '+str(employer.key), fg='#777777', bg='#ffffff', font=("Segoe UI", "12", "normal"), wraplength=300, justify='left').place(x=10, y=120)
+        
+        #Areas
+        Label(mainFrame, text='Areas', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=150)
+        
+        areasFrame = ScrollableFrame(mainFrame, x=10, y=180, width=(root.winfo_width()/2)-40, height=root.winfo_height()-280)
+        areasFrame.place(x=10, y=180)
+        
+        areasList = areas.findByEmployerId(employer.id)
+        for area in areasList:
+            areaFrame = Frame(areasFrame.scrollableFrame)
+            areaFrame.config(bg=colorGray, highlightthickness=0, width=(root.winfo_width()/2)-60, height=100)
+            areaFrame.pack(padx=10, pady=10)
+            
+            #Department
+            Label(areaFrame, text=area.department.name, fg='#666666', bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=20, y=20)
+            #Name
+            Label(areaFrame, text=area.name, fg='#333333', bg=colorGray, font=("Segoe UI", "11", "bold"), wraplength=300, justify='left').place(x=20, y=50)
+        
+        #Maintenances
+        Label(mainFrame, text='Mantenimientos programados', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=(root.winfo_width()/2)+10, y=150)
+        
+        maintenancesFrame = ScrollableFrame(mainFrame, x=(root.winfo_width()/2)+10, y=180, width=(root.winfo_width()/2)-40, height=root.winfo_height()-280)
+        maintenancesFrame.place(x=(root.winfo_width()/2)+10, y=180)
+        
+        maintenancesList = mantenimientos.find(employerId=employer.id, status=mantenimientos.Programmed)
+        for maintenance in maintenancesList:
+            mant = Frame(maintenancesFrame.scrollableFrame)
+            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
+            mant.pack(pady=10, padx=15)
+            if maintenance.date < datetime.date(datetime.now()):
+                actualColor = colorRed
+            else:
+                actualColor = colorGreen
+            Frame(mant, bg=actualColor, height=100, width=3).place(x=0, y=0)
+            #Titular
+            Label(mant, text='Mantenimiento ID '+str(maintenance.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
+            #Date
+            Label(mant, text=maintenance.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
+            #Status
+            if maintenance.status == 'Realizado' or maintenance.status == 'Realizado Programado':
+                color = colorGreen
+            elif maintenance.status == 'Programado':
+                color = colorBlue
+            elif maintenance.status == 'Cancelado':
+                color = colorRed
+            Label(mant, text=maintenance.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
+            #type
+            Label(mant, text='Matenimiento '+maintenance.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=140, y=30)
+            #Descripción
+            Label(mant, text=maintenance.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
+            #Botón
+            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(maintenance.id, self)).place(x=root.winfo_width()/2-170, y=60)
 
 if __name__ == '__main__':
     aplicacion = Crm()
