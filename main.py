@@ -1,4 +1,5 @@
 from cgitb import text
+from msilib.schema import ComboBox
 from tkinter import *
 import tkinter.ttk as ttk
 from tkinter import messagebox
@@ -13,6 +14,7 @@ from datetime import datetime
 from datetime import date
 from datetime import timedelta
 from modules.ui.scrollableFrame import *
+from modules import inventory
 import locale
 
 #locale.setlocale(locale.LC_ALL, 'es-ES')
@@ -23,6 +25,7 @@ colorRed = '#c83737'
 colorBlue = '#37abc8'
 colorGray = '#f2f2f2'
 colorDarkGray = '#dadada'
+colorWhite = "#ffffff"
 
 #Funciones--------
 def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
@@ -95,6 +98,7 @@ class Crm:
         self.objetoActividades = Actividades()
         self.objetoMantenimientos = Mantenimientos(self)
         self.objetoEmpleados = Empleados(self)
+        self.inventory = Inventory(self)
 
         #Menu---------------------
         root.update()
@@ -402,6 +406,14 @@ class BarraMenu(Crm):
         #menuMantenimientos.add_command(label='Editar actividad', command= lambda:padre.objetoActividades.editar())
         #menuMantenimientos.add_command(label='Eliminar actividad', command= lambda:padre.objetoActividades.eliminar())
 
+        #Inventory menu------------------------
+        productMenu = Menu(self.menubar, tearoff=0)
+        productMenu.add_command(label='Crear producto', command= lambda:padre.inventory.new())
+        
+        inventoryMenu = Menu(self.menubar, tearoff=0)
+        inventoryMenu.add_cascade(label='Productos', menu=productMenu)
+        
+        
         helpmenu = Menu(self.menubar)
 
 
@@ -413,6 +425,7 @@ class BarraMenu(Crm):
         self.menubar.add_cascade(label="Equipos", menu=menuEquipos)
         self.menubar.add_cascade(label="Actividades", menu=menuActividades)
         self.menubar.add_cascade(label="Mantenimientos", menu=menuMantenimientos)
+        self.menubar.add_cascade(label="Inventario", menu=inventoryMenu)
         self.menubar.add_cascade(label="Ayuda", menu=helpmenu)
 
 class Departamentos():
@@ -1906,6 +1919,70 @@ class Empleados():
             #Botón
             Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(maintenance.id, self)).place(x=root.winfo_width()/2-170, y=60)
 
+class Inventory():
+    
+    def __init__(self, parent) -> None:
+        global root
+        self.parent = parent
+        
+    def new(self):
+        self.window = Toplevel()
+        self.window.title('Crear producto')
+        
+        mainframe = Frame(self.window)
+        mainframe.config(bg=colorWhite, width=400, height=500)
+        mainframe.pack()
+        
+        #Var
+        productName = StringVar(mainframe)
+        productDescription = StringVar(mainframe)
+        productBrand = StringVar(mainframe)
+        productModel = StringVar(mainframe)
+        
+        #Tittle
+        Label(mainframe, text='Nuevo producto', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        
+        #Name
+        Label(mainframe, text='Nombre',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=70)
+        Entry(mainframe, width=50, textvariable=productName, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=100)
+        
+        #Description
+        Label(mainframe, text='Descripción',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=140)
+        Entry(mainframe, width=50, textvariable=productDescription, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=170)
+        
+        #Brand
+        Label(mainframe, text='Marca',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=210)
+        Entry(mainframe, width=50, textvariable=productBrand, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=240)
+        
+        #Model
+        Label(mainframe, text='Modelo/no. de pieza',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=280)
+        Entry(mainframe, width=50, textvariable=productModel, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=310)
+        
+        #Categories
+        Label(mainframe, text='Categoría',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=350)
+        categories = inventory.getCategories()
+        category = ttk.Combobox(mainframe, values = categories, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, width=47, state="readonly")
+        category.place(x=20, y=380)
+        
+        #Save
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: window.destroy() if self.saveProduct(productName.get(), productDescription.get(), productBrand.get(), productModel.get(), categories[category.current()]) else window.destroy()).place(x=20, y=440)
+        
+    def saveProduct(self, name, description, brand, model, category):
+        newProduct = inventory.Product()
+        newProduct.name = name
+        newProduct.description = description
+        newProduct.brand = brand
+        newProduct.model = model
+        newProduct.category = category
+        newProduct.save()
+        try:
+            self.window.destroy()
+        except:
+            pass
+        finally:
+            messagebox.showinfo(title='Producto registrado', message='El producto se ha registrado correctamente.')
+        return True
+        
 if __name__ == '__main__':
     aplicacion = Crm()
     root.mainloop()

@@ -5,3 +5,6 @@ plantilla.py
 **/modules/database.db
 **/html
 __pycache__/mantenimientos.cpython-310.pyc
+modules/__pycache__/sql.cpython-310.pyc
+modules/__pycache__/sql.cpython-310.pyc
+modules/__pycache__/inventory.cpython-310.pyc
