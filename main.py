@@ -410,8 +410,12 @@ class BarraMenu(Crm):
         productMenu = Menu(self.menubar, tearoff=0)
         productMenu.add_command(label='Crear producto', command= lambda:padre.inventory.new())
         
+        categoryMenu = Menu(self.menubar, tearoff=0)
+        categoryMenu.add_command(label='Crear categoría', command= lambda:padre.inventory.newCategory())
+        
         inventoryMenu = Menu(self.menubar, tearoff=0)
         inventoryMenu.add_cascade(label='Productos', menu=productMenu)
+        inventoryMenu.add_cascade(label='Categorías', menu=categoryMenu)
         
         
         helpmenu = Menu(self.menubar)
@@ -1965,7 +1969,7 @@ class Inventory():
         category.place(x=20, y=380)
         
         #Save
-        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: window.destroy() if self.saveProduct(productName.get(), productDescription.get(), productBrand.get(), productModel.get(), categories[category.current()]) else window.destroy()).place(x=20, y=440)
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveProduct(productName.get(), productDescription.get(), productBrand.get(), productModel.get(), categories[category.current()])).place(x=20, y=440)
         
     def saveProduct(self, name, description, brand, model, category):
         newProduct = inventory.Product()
@@ -1981,6 +1985,39 @@ class Inventory():
             pass
         finally:
             messagebox.showinfo(title='Producto registrado', message='El producto se ha registrado correctamente.')
+        return True
+    
+    def newCategory(self):
+        self.window = Toplevel()
+        self.window.title('Crear categoría')
+        
+        mainframe = Frame(self.window)
+        mainframe.config(bg=colorWhite, width=300, height=200)
+        mainframe.pack()
+        
+        #Var
+        categoryName = StringVar(mainframe)
+        
+        #Tittle
+        Label(mainframe, text='Nueva categoría', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        
+        #Name
+        Label(mainframe, text='Nombre',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=70)
+        Entry(mainframe, width=37, textvariable=categoryName, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=100)
+        
+        #Save
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveCategory(categoryName.get())).place(x=20, y=140)
+        
+    def saveCategory(self, name):
+        newCategory = inventory.Category()
+        newCategory.name = name
+        newCategory.save()
+        try:
+            self.window.destroy()
+        except:
+            pass
+        finally:
+            messagebox.showinfo(title='Categoría registrada', message='La categoría se ha registrado correctamente.')
         return True
         
 if __name__ == '__main__':

@@ -21,6 +21,7 @@ class Category():
             self.id = id
             self.findById(self.id)
             return
+        self.id = 0
         self.name = None
         
     def __repr__(self) -> str:
@@ -30,6 +31,14 @@ class Category():
         rawData = sql.peticion(f"SELECT * FROM category WHERE id = {id}")[0]
         self.name = rawData[1]
         return 1
+    
+    def save(self):
+        if self.id == 0:
+            sql.peticion(f"INSERT INTO category VALUES(NULL, '{self.name}')")
+            self.id = sql.peticion(f"SELECT MAX(id) as id FROM category")[0][0]
+        else:
+            sql.peticion(f"UPDATE category SET name = '{self.name}' WHERE id = {self.id}")
+
         
 
 class Product():
