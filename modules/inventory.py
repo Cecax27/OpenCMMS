@@ -5,6 +5,10 @@ except:
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
+try:
+    import pdf
+except:
+    from modules import pdf
 
 #Const-----
 INPUT = "input"
@@ -178,7 +182,7 @@ class Requisition():
         return f"Requisition Id {self.id}:\n\tDate: {self.date}\n\tStatus: {self.status}\n\tDescription: {self.description}\n"
     
     def findById(self, id):
-        rawData = sql.peticion(f"SELECT * FROM requisitions WHERE id = {id}")[0]
+        rawData = sql.peticiontres(f"SELECT * FROM requisitions WHERE id = {id}")[0]
         if len(rawData) == 0:
             return 0
         self.date = rawData[1]
@@ -199,6 +203,9 @@ class Requisition():
             for product in self.products:
                 product.requisitionId = self.id
                 product.save()
+            
+    def generatePDF(self, filename):
+        pdf.createRequisitionReport(self, filename)
         
 class RequisitionDetail():
     
@@ -235,9 +242,9 @@ class RequisitionDetail():
         
 #Functions------
 def checkDatabase():
-    sql.peticion('''CREATE TABLE IF NOT EXISTS"requisitions" (
+    sql.peticion('''CREATE TABLE IF NOT EXISTS "requisitions" (
 	"id"	INTEGER NOT NULL UNIQUE,
-	"date"	DATESTAMP NOT NULL,
+	"date"	TIMESTAMP NOT NULL,
 	"status"	TEXT NOT NULL,
 	"description"	TEXT,
 	PRIMARY KEY("id" AUTOINCREMENT)
@@ -294,5 +301,5 @@ def crearRequisiion():
     newRequisition.save()
     
 if __name__ == '__main__':
-    # checkDatabase()
-    print(findByName('base'))
+    #checkDatabase()
+    Requisition(id = 3).generatePDF('prueba.pdf')

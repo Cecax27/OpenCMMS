@@ -2089,8 +2089,12 @@ class Inventory():
             self.productsTable.insert('', 0, id=product.id, text=product.name, values=(product.description, product.brand, product.model))
             
     def addProductToRequisition(self):
-        self.requisition.addProduct(self.productsTable.focus(), self.quantity.get(),self.comment.get('1.0',END))
-        print(self.requisition.products)
+        if self.comment.get('1.0',END) != '':
+            self.requisition.addProduct(self.productsTable.focus(), self.quantity.get(),None)
+        else:
+            self.requisition.addProduct(self.productsTable.focus(), self.quantity.get(),self.comment.get('1.0',END))
+        self.quantity.set('')
+        self.comment.delete("1.0", END)
         self.updateProductsFrame()
         
     def updateProductsFrame(self):
@@ -2111,6 +2115,8 @@ class Inventory():
     def saveRequisition(self):
         self.requisition.save()
         messagebox.showinfo(title='Requisición guardada', message=f"La requisición ha sido guardada con el ID {self.requisition.id}")
+        self.requisition.generatePDF(f"Requisicion {self.requisition.id}.pdf")
+        self.window.destroy()
             
         
 if __name__ == '__main__':
