@@ -39,5 +39,26 @@ In this table, you can get into all the movements of the products in the invento
         Can be only 'maintenance' or 'requisition'.
     <li><b>origin_id</b></li>
         It's the id of the score in the respective origin table.
-
 </ul>
+
+<h2>Requisitions</h2>
+<h3>requisitions table</h3>
+In this table, you can get into the requisitions.
+<ul>
+    <li><b>id</b></li>
+    <li><b>date</b></li>
+    <li><b>status</b></li>
+    <li><b>description</b></li>
+</ul> 
+
+<h3>requisitions_detail table</h3>
+In this table, the software will save the details of each requisitions.
+<ul>
+    <li><b>id</b></li>
+    <li><b>requisition_id</b></li>
+    <li><b>product_id</b></li>
+    <li><b>quantity</b></li>
+    <li><b>comment</b></li>
+    <li><b>status</b></li>
+
+</ul> 

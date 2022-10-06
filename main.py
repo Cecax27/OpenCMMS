@@ -1,4 +1,5 @@
 from cgitb import text
+from math import prod
 from msilib.schema import ComboBox
 from tkinter import *
 import tkinter.ttk as ttk
@@ -413,15 +414,17 @@ class BarraMenu(Crm):
         categoryMenu = Menu(self.menubar, tearoff=0)
         categoryMenu.add_command(label='Crear categoría', command= lambda:padre.inventory.newCategory())
         
+        requisitionMenu = Menu(self.menubar, tearoff=0)
+        requisitionMenu.add_command(label='Crear requisición', command=lambda: padre.inventory.newRequisition())
+        
         inventoryMenu = Menu(self.menubar, tearoff=0)
         inventoryMenu.add_cascade(label='Productos', menu=productMenu)
         inventoryMenu.add_cascade(label='Categorías', menu=categoryMenu)
+        inventoryMenu.add_cascade(label='Requisiciones', menu=requisitionMenu)
         
         
         helpmenu = Menu(self.menubar)
-
-
-
+        
         #Etiquetas
         self.menubar.add_cascade(label="Archivo", menu=filemenu)
         self.menubar.add_cascade(label="Editar", menu=editmenu)
@@ -2019,6 +2022,96 @@ class Inventory():
         finally:
             messagebox.showinfo(title='Categoría registrada', message='La categoría se ha registrado correctamente.')
         return True
+    
+    def newRequisition(self):
+        self.window = Toplevel()
+        self.window.state('zoomed')
+        self.window.title('Requisición nueva')
+        
+        self.window.update()
+        mainframe = Frame(self.window)
+        mainframe.config(bg=colorWhite, width=self.window.winfo_width(), height=self.window.winfo_height())
+        mainframe.pack()
+        
+        #Var
+        self.searchString = StringVar(mainframe)
+        descriptionString = StringVar(mainframe)
+        self.quantity = StringVar(mainframe)
+        
+        self.requisition = inventory.Requisition()
+        self.requisition.date = datetime.now()
+        self.requisition.status = inventory.STATUS_DRAFT
+        
+        #Tittle
+        Label(mainframe, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=334, y=26)
+        Label(mainframe, text='Nueva', bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=334, y=50)
+        
+        #Save
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveRequisition).place(x=934, y=35)
+        
+        #Search
+        search = Frame(mainframe)
+        search.config(bg='#ECECEC', width=700, height=30)
+        search.place(x=334 , y=100)
+        global searchImg 
+        searchImg= PhotoImage(file='img/search.png')
+        Label(search, image = searchImg, bd=0, width=12, heigh=12).place(x=12, y=9)
+        searchEntry = Entry(search, width=95, textvariable=self.searchString, font=("Segoe UI", "10", "normal"), foreground="#222222", background='#ECECEC', highlightthickness=0, relief=FLAT)
+        searchEntry.place(x=30, y=4)
+        searchEntry.bind('<Key>', self.updateInventorySearch)
+        
+        #Products table
+        self.productsTable = crearTabla(['Nombre', 'Descripción', 'Marca', 'Modelo'], [1,], [175,175,175,175], [['','','',''],], mainframe, 4, '' )
+        self.productsTable.place(x=334, y=140)
+        
+        #Coment
+        Label(mainframe, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=334, y=270)
+        self.comment = Text(mainframe, width=100, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=3)
+        self.comment.place(x=334, y=296)
+        
+        #Quantity
+        Label(mainframe, text='Cantidad',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=334, y=370)
+        Entry(mainframe, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=334, y=392)
+        
+        #Add product
+        Button(mainframe, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToRequisition).place(x=572, y=392)
+        
+        #Products
+        Label(mainframe, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=334, y=437)
+        
+        self.productsFrame = ScrollableFrame(mainframe, width=700, height=200, x=334, y=466)
+        self.productsFrame.place(x=334, y=466)
+        
+    def updateInventorySearch(self, event):
+        productsList = inventory.findByName(self.searchString.get())
+        self.productsTable.delete(*self.productsTable.get_children())
+        for product in productsList:
+            self.productsTable.insert('', 0, id=product.id, text=product.name, values=(product.description, product.brand, product.model))
+            
+    def addProductToRequisition(self):
+        self.requisition.addProduct(self.productsTable.focus(), self.quantity.get(),self.comment.get('1.0',END))
+        print(self.requisition.products)
+        self.updateProductsFrame()
+        
+    def updateProductsFrame(self):
+        self.productsFrame.clear()
+        for product in self.requisition.products:
+            productFrame = Frame(self.productsFrame.scrollableFrame)
+            productFrame.config(bg=colorGray, highlightthickness=0, width=680, height=70)
+            productFrame.pack(pady=5, padx=5)
+            #Plant
+            name = Label(productFrame, text=product.product.name, fg='#000000', bg=colorGray, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
+            name.place(x=10, y=10)
+            name.update()
+            Label(productFrame, text='Cantidad: '+product.quantity, fg=colorBlue, bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=10)
+            Label(productFrame, text=product.comment, fg='#4d4d4d', bg=colorGray, font=("Segoe UI", "9", "normal"), wraplength=600, justify='left').place(x=10, y=35)
+            productFrame.update()
+            #Button(productFrame, text=' X ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=1, relief=FLAT, command=self.addProductToRequisition).place(x=productFrame.winfo_width()-35, y=10)
+    
+    def saveRequisition(self):
+        self.requisition.save()
+        messagebox.showinfo(title='Requisición guardada', message=f"La requisición ha sido guardada con el ID {self.requisition.id}")
+            
         
 if __name__ == '__main__':
     aplicacion = Crm()

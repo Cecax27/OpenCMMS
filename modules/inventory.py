@@ -13,6 +13,12 @@ OUTPUT = 'output'
 MAINTENANCE = 'maintenance'
 REQUISITION = 'requisition'
 
+STATUS_DRAFT = 'borrador'
+STATUS_REQUESTED = 'solicitada'
+STATUS_CONFIRMED = 'confirmada'
+STATUS_PARTIAL_DELIVERED = 'entregada parcialmente'
+STATUS_DELIVERED = 'entregada'
+
 #Classes------
 class Category():
     
@@ -37,9 +43,7 @@ class Category():
             sql.peticion(f"INSERT INTO category VALUES(NULL, '{self.name}')")
             self.id = sql.peticion(f"SELECT MAX(id) as id FROM category")[0][0]
         else:
-            sql.peticion(f"UPDATE category SET name = '{self.name}' WHERE id = {self.id}")
-
-        
+            sql.peticion(f"UPDATE category SET name = '{self.name}' WHERE id = {self.id}")     
 
 class Product():
     
@@ -91,7 +95,7 @@ class Product():
         self.movements = []
         rawData = sql.peticiontres(f"SELECT id FROM inventory_detail WHERE product_id = {self.id}")
         if len(rawData) == 0:
-            print('No movements found.')
+            #print('No movements found.')
             return 0
         for movement in rawData:
             self.movements.append(InventoryMovement(id = movement[0]))
@@ -157,9 +161,100 @@ class InventoryMovement():
         else:
             sql.petitionWithParam(f"UPDATE inventory_detail SET 'date' = (?) WHERE id = {self.id}", (self.date,))
         
+class Requisition():
+    
+    def __init__(self, id = 0) -> None:
+        if id != 0:
+            self.id = id
+            self.findById(self.id)
+            return
+        self.id = 0
+        self.date = None
+        self.status = None
+        self.description = None
+        self.products = []
+    
+    def __repr__(self) -> str:
+        return f"Requisition Id {self.id}:\n\tDate: {self.date}\n\tStatus: {self.status}\n\tDescription: {self.description}\n"
+    
+    def findById(self, id):
+        rawData = sql.peticion(f"SELECT * FROM requisitions WHERE id = {id}")[0]
+        if len(rawData) == 0:
+            return 0
+        self.date = rawData[1]
+        self.status = rawData[2]
+        self.description = rawData[3]
+        self.products = []
+        idList = sql.peticion(f"SELECT id FROM requisitions_detail WHERE requisition_id = {id}")
+        for id in idList:
+            self.products.append(RequisitionDetail(id = id[0]))
+        
+    def addProduct(self, productId, quantity, comment = None, status = STATUS_DRAFT):
+        self.products.append(RequisitionDetail(productId = productId, quantity = quantity, comment = comment, status = status, requisitionId = self.id))
+        
+    def save(self):
+        if self.id == 0:
+            sql.petitionWithParam("INSERT INTO requisitions VALUES (NULL, ?, ?, ?)",(self.date, self.status, self.description))
+            self.id = sql.peticion("SELECT MAX(id) as id FROM requisitions")[0][0]
+            for product in self.products:
+                product.requisitionId = self.id
+                product.save()
+        
+class RequisitionDetail():
+    
+    def __init__(self, productId = 0, quantity = 0, id = 0, comment = None, status = STATUS_DRAFT, requisitionId = 0) -> None:
+        if id != 0:
+            self.id = id
+            self.findById(self.id)
+            return
+        self.id = 0
+        if productId == 0:
+            self.product = Product()
+        else:
+            self.product = Product(id = productId)
+        self.quantity = quantity
+        self.comment = comment
+        self.status = status
+        self.requisitionId = requisitionId
+        
+    def __repr__(self) -> str:
+        return f"\tDetail Id {self.id}:\n\t\tProduct:{self.product.name}\n\t\tQuantity: {self.quantity}\n\t\tStatus: {self.status}\n\t\tComment: {self.comment}\n"
+        
+    def findById(self, id):
+        rawData = sql.peticion(f"SELECT * FROM requisitions_detail WHERE id = {id}")[0]
+        self.requisitionId = rawData[1]
+        self.product = Product(id = rawData[2])
+        self.quantity = rawData[3]
+        self.comment = rawData[4]
+        self.status = rawData[5]
+        
+    def save(self):
+        if self.id == 0:
+            sql.petitionWithParam("INSERT INTO requisitions_detail VALUES (NULL, ?, ?, ?, ?, ?)", (self.requisitionId, self.product.id, self.quantity, self.comment, self.status))
+            self.id = sql.peticion("SELECT MAX(id) AS id FROM requisitions_detail")[0][0]
         
 #Functions------
 def checkDatabase():
+    sql.peticion('''CREATE TABLE IF NOT EXISTS"requisitions" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"date"	DATESTAMP NOT NULL,
+	"status"	TEXT NOT NULL,
+	"description"	TEXT,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);''')
+    
+    sql.peticion('''CREATE TABLE IF NOT EXISTS "requisitions_detail" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"requisition_id"	INTEGER NOT NULL,
+	"product_id"	INTEGER NOT NULL,
+	"quantity"	INTEGER NOT NULL,
+	"comment"	TEXT,
+	"status"	TEXT NOT NULL,
+	FOREIGN KEY("requisition_id") REFERENCES "requisitions"("id"),
+	FOREIGN KEY("product_id") REFERENCES "inventory"("id"),
+	PRIMARY KEY("id" AUTOINCREMENT)
+);''')
+    
     return sql.peticion('''CREATE TABLE IF NOT EXISTS "inventory_detail" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"date"	BLOB NOT NULL,
@@ -179,21 +274,25 @@ def getCategories():
         list.append(Category(id = id[0]))
     return list
 
-#Test------
+def findByName(name):
+    list = []
+    for id in sql.peticion(f"SELECT id FROM inventory WHERE name LIKE '%{name}%'"):
+        list.append(Product(id = id[0]))
+    return list
 
+    #Test------
+
+def crearRequisiion():
+    newRequisition = Requisition()
+    newRequisition.date = datetime.now()
+    newRequisition.status = STATUS_DRAFT
+    newRequisition.description = 'Nueva requisición de prueba'
+    
+    newRequisition.addProduct(1, 10, comment='Prueba 1')
+    print(newRequisition)
+    print(newRequisition.products[0])
+    newRequisition.save()
+    
 if __name__ == '__main__':
     # checkDatabase()
-    # myproduct = Product()
-    # myproduct.name = 'Tubo LED T8/18W Led Concept'
-    # myproduct.category = 5
-    # myproduct.description = 'Tubo LED T8/18W Led Concept'
-    # myproduct.brand = 'Led Concept'
-    # myproduct.model = 'T8/18W'
-    # myproduct.save()
-    #myproduct = Product(id = 2)
-    #myproduct.addMovement(datetime.now(), INPUT, 5, 'Esto es una prueba.', REQUISITION, 1)
-    #print(type(myproduct.movements[0].date))
-    #myproduct.movements[0].save()
-    #myproduct = Product(id = 2)
-    #print(type(myproduct.movements[0].date))
-    print(getCategories())
+    print(findByName('base'))
