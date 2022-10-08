@@ -52,9 +52,5 @@ def peticiontres(peticion):
 	conn.close()
 	return retorno
 
-
-
-
-
 if __name__ == '__main__':
 	table('empleados')

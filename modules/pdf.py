@@ -30,11 +30,12 @@ def createRequisitionReport(requisition, filename):
     page.setFont("Semibold",12)
     page.drawString(100, h - 120, str(requisition.id)) 
     page.drawString(155	, h - 120, requisition.date.strftime("%d / %m / %Y")) 
-    description = page.beginText(120, h-143)
-    description.setFont("Normal",12)
-    for line in range(0,int(len(requisition.description)/77)+1,1):
-        description.textLine(requisition.description[line*77:(line+1)*77])
-    page.drawText(description)
+    if requisition.description != None:
+        description = page.beginText(120, h-143)
+        description.setFont("Normal",12)
+        for line in range(0,int(len(requisition.description)/77)+1,1):
+            description.textLine(requisition.description[line*77:(line+1)*77])
+        page.drawText(description)
     page.setStrokeColorRGB(0.6,0.6,0.6)
     page.line(50, h-190, w-50, h-190)
     
@@ -55,6 +56,8 @@ def createRequisitionReport(requisition, filename):
         page.setFont("Normal",10)
         page.drawString(50, lastPosition, str(product.quantity))
         page.drawString(90, lastPosition, product.product.description)
+        page.drawString(390, lastPosition, product.product.brand)
+        page.drawString(470, lastPosition, product.product.model)
         lastPosition -= 20
         if product.comment != None:
             page.setFillColorRGB(0.4,0.4,0.4)

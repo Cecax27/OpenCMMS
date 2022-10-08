@@ -2,6 +2,7 @@ from cgitb import text
 from math import prod
 from msilib.schema import ComboBox
 from tkinter import *
+from tkinter.filedialog import asksaveasfile
 import tkinter.ttk as ttk
 from tkinter import messagebox
 from turtle import width
@@ -163,7 +164,7 @@ class Crm:
             ).place(x=3.25*root.winfo_width()/6, y=4)
 
         Button(menuFrame, 
-            text='Areas',
+            text='Requisiciones',
             font=("Segoe UI", "11", "normal"),
             bg=colorButton,
             fg="#ffffff",
@@ -172,7 +173,7 @@ class Crm:
             width=12,
             borderwidth=5,
             relief=FLAT,
-            command=self.areas
+            command=self.inventory.requisitionsMainWindow
             ).place(x=4.25*root.winfo_width()/6, y=4)
 
         Button(menuFrame, 
@@ -1926,11 +1927,70 @@ class Empleados():
             #Botón
             Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(maintenance.id, self)).place(x=root.winfo_width()/2-170, y=60)
 
+def func_displayRequisition(id, object):
+    return lambda event: object.parent.inventory.displayRequisition(id)
+
 class Inventory():
     
     def __init__(self, parent) -> None:
         global root
         self.parent = parent
+        
+    def requisitionsMainWindow(self):
+        global mainFrame
+        clearMainFrame()
+        
+        Label(mainFrame, text='Requisiciones', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        requisitionsList = inventory.getRequisitions(quantity=10)
+        
+        requisitionsFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
+        requisitionsFrame.place(x=0, y=0)
+        
+        Label(mainFrame, text='Id', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=20, y=40)
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=130, y=40)
+        
+        for req in requisitionsList:
+            reqNumber = requisitionsList.index(req)
+            backColor = colorGray if reqNumber%2==0 else colorWhite
+            frame = Frame(requisitionsFrame.scrollableFrame)
+            frame.config(width=root.winfo_width()-80, height=30, bg=backColor)
+            frame.bind('<Button-1>', func_displayRequisition(req.id, self))
+            frame.pack(pady=1)
+            Label(frame, text=req.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
+            Label(frame, text=datetime.date(req.date).strftime("%a %d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
+    
+    def displayRequisition(self, id):
+        global mainFrame
+        clearMainFrame()
+        req = inventory.Requisition(id = id)
+        
+        #Tittle
+        Label(mainFrame, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        Label(mainFrame, text='ID '+str(req.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
+        Label(mainFrame, text=req.status, bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
+        Label(mainFrame, text=req.date, bg="#ffffff", font=("Segoe UI", "14", "normal")).place(x=20, y=120)
+        
+        #Save
+        Button(mainFrame, text='Guardar en PDF',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveRequisitionPDF(req)).place(x=934, y=35)
+        
+        #Description
+        Label(mainFrame, text=req.description, bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=20, y=160)
+        
+        #Make requested
+        if req.status == inventory.STATUS_DRAFT:    
+            Button(mainFrame, text='Marcar solicitada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(req, inventory.STATUS_REQUESTED)).place(x=1050, y=35)
+            
+        #Make confirmed
+        if req.status == inventory.STATUS_REQUESTED:    
+            Button(mainFrame, text='Marcar confirmada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(req, inventory.STATUS_CONFIRMED)).place(x=1050, y=35)
+            
+    def changeStatus(self, requisition, status):
+        requisition.changeStatus(status)
+        self.displayRequisition(requisition.id)
+        
+    def saveRequisitionPDF(self, requisition):
+        f = asksaveasfile(initialfile=f"Requisicion {requisition.id}.pdf", defaultextension='.pdf', filetypes=[('Portable Document File', '*.pdf'),])
+        requisition.generatePDF(f.name)
         
     def new(self):
         self.window = Toplevel()
@@ -2089,7 +2149,7 @@ class Inventory():
             self.productsTable.insert('', 0, id=product.id, text=product.name, values=(product.description, product.brand, product.model))
             
     def addProductToRequisition(self):
-        if self.comment.get('1.0',END) != '':
+        if self.comment.get('1.0',END) == '':
             self.requisition.addProduct(self.productsTable.focus(), self.quantity.get(),None)
         else:
             self.requisition.addProduct(self.productsTable.focus(), self.quantity.get(),self.comment.get('1.0',END))

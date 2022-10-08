@@ -203,6 +203,13 @@ class Requisition():
             for product in self.products:
                 product.requisitionId = self.id
                 product.save()
+        else:
+            sql.petitionWithParam(f"UPDATE requisitions SET date = ?, status = ?, description = ? WHERE id = {self.id}", (self.date, self.status, self.description))
+    
+    def changeStatus(self, status, save = True):
+        self.status = status
+        if save == True:
+            self.save()
             
     def generatePDF(self, filename):
         pdf.createRequisitionReport(self, filename)
@@ -287,6 +294,13 @@ def findByName(name):
         list.append(Product(id = id[0]))
     return list
 
+def getRequisitions(lastest = True, quantity = 0):
+    list = []
+    for id in sql.peticion(f"SELECT id FROM requisitions ORDER BY id {'DESC' if lastest else 'ASC'} {'' if quantity == 0 else 'LIMIT '+str(quantity)}"):
+        list.append(Requisition(id = id[0]))
+    return list
+    
+
     #Test------
 
 def crearRequisiion():
@@ -302,4 +316,4 @@ def crearRequisiion():
     
 if __name__ == '__main__':
     #checkDatabase()
-    Requisition(id = 3).generatePDF('prueba.pdf')
+    print(getRequisitions(lastest=False))
