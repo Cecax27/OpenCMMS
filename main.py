@@ -2168,13 +2168,15 @@ class Inventory():
         clearMainFrame()
         
         Label(mainFrame, text='Requisiciones', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
-        requisitionsList = inventory.getRequisitions(quantity=10)
+        requisitionsList = inventory.getRequisitions(quantity=10, order='date')
         
         requisitionsFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
         requisitionsFrame.place(x=0, y=0)
         
         Label(mainFrame, text='Id', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=20, y=40)
-        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=130, y=40)
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=90, y=40)
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=270, y=40)
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=370, y=40)
         
         for req in requisitionsList:
             reqNumber = requisitionsList.index(req)
@@ -2184,7 +2186,9 @@ class Inventory():
             frame.bind('<Button-1>', func_displayRequisition(req.id, self))
             frame.pack(pady=1)
             Label(frame, text=req.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
-            Label(frame, text=datetime.date(req.date).strftime("%a %d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
+            Label(frame, text=datetime.date(req.date).strftime("%d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
+            Label(frame, text=req.status.capitalize(), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=260, y=4)
+            Label(frame, text=req.description, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=360, y=4)
     
     def displayRequisition(self, id):
         global mainFrame
@@ -2193,9 +2197,9 @@ class Inventory():
         
         #Tittle
         Label(mainFrame, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
-        Label(mainFrame, text='ID '+str(req.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
-        Label(mainFrame, text=req.status, bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
-        Label(mainFrame, text=datetime.date(req.date).strftime("%a %d %B %Y"), bg="#ffffff", font=("Segoe UI", "14", "normal")).place(x=20, y=120)
+        Label(mainFrame, text='ID '+str(req.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
+        Label(mainFrame, text=req.status.capitalize(), bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
+        Label(mainFrame, text=datetime.date(req.date).strftime("%d / %b /  %Y"), bg="#ffffff", font=("Segoe UI", "14", "normal")).place(x=20, y=120)
         
         #Save
         Button(mainFrame, text='Guardar en PDF',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveRequisitionPDF(req)).place(x=934, y=35)
@@ -2210,6 +2214,10 @@ class Inventory():
         #Make confirmed
         if req.status == inventory.STATUS_REQUESTED:    
             Button(mainFrame, text='Marcar confirmada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(req, inventory.STATUS_CONFIRMED)).place(x=1050, y=35)
+            
+        #Make delivered
+        if req.status == inventory.STATUS_CONFIRMED:    
+            Button(mainFrame, text='Marcar entregada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.purchaseDelivered(req)).place(x=1050, y=35)    
             
         #Products
         Label(mainFrame, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
@@ -2227,8 +2235,8 @@ class Inventory():
             name = Label(productFrame, text=product.product.name, fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
             name.place(x=10, y=10)
             name.update()
-            Label(productFrame, text='Cantidad: '+str(product.quantity), fg=colorBlue, bg=backColor, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=10)
-            Label(productFrame, text=product.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=600, justify='left').place(x=10, y=35)
+            Label(productFrame, text='Cantidad: '+str(product.quantity), fg=colorBlue, bg=backColor, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=11)
+            Label(productFrame, text=product.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=1000, justify='left').place(x=10, y=35)
             productFrame.update()
             
     def changeStatus(self, requisition, status):
@@ -2238,6 +2246,50 @@ class Inventory():
     def saveRequisitionPDF(self, requisition):
         f = asksaveasfile(initialfile=f"Requisicion {requisition.id}.pdf", defaultextension='.pdf', filetypes=[('Portable Document File', '*.pdf'),])
         requisition.generatePDF(f.name)
+        
+    def purchaseDelivered(self, requisition):
+        self.window = Toplevel()
+        self.window.title('Procesar entrega')
+        
+        mainframe = Frame(self.window)
+        mainframe.config(bg=colorWhite, width=800, height=500)
+        mainframe.pack()
+        
+        #Var
+        
+        #Tittle
+        Label(mainframe, text='Procesar entrega', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        
+        Label(mainframe, text='Nombre', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=20, y=50)
+        Label(mainframe, text='Solicitados', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=580, y=50)
+        Label(mainframe, text='Entregados', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=670, y=50)
+        
+        #Save
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command= lambda: self.processPurchase(requisition, detailsList)).place(x=720, y=20)
+        
+        self.productsFrame = ScrollableFrame(mainframe, width=760, height=400, x=10, y=80)
+        self.productsFrame.place(x=10, y=80)
+        
+        detailsList = []
+        for detail in requisition.products:
+            productFrame = Frame(self.productsFrame.scrollableFrame)
+            productFrame.config(bg=colorGray, highlightthickness=0, width=740, height=50)
+            productFrame.pack(pady=5, padx=5)
+            Label(productFrame, text=detail.product.name, fg='#000000', bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=10, y=10)
+            Label(productFrame, text=detail.quantity, fg='#000000', bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=570, y=10)
+            quantity = IntVar(mainframe)
+            Entry(productFrame, textvariable=quantity, width=5, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=660, y=10)
+            detailsList.append([detail, quantity])
+        
+    def processPurchase(self, requisition, detailsList):
+        for detail in detailsList:
+            detail[0].quantity = detail[1].get()
+            detail[0].status = inventory.STATUS_DELIVERED
+            detail[0].save()
+            detail[0].product.addMovement(datetime.now(), inventory.INPUT, detail[1].get(), detail[0].comment, inventory.REQUISITION, requisition.id)
+        self.changeStatus(requisition, inventory.STATUS_DELIVERED)
+        self.window.destroy()
+        self.displayRequisition(requisition.id)
         
     def new(self):
         self.window = Toplevel()
@@ -2412,7 +2464,7 @@ class Inventory():
             productFrame.config(bg=colorGray, highlightthickness=0, width=680, height=70)
             productFrame.pack(pady=5, padx=5)
             #Plant
-            name = Label(productFrame, text=product.product.name, fg='#000000', bg=colorGray, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
+            name = Label(productFrame, text=product.product.name, fg='#000000', bg=colForGray, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
             name.place(x=10, y=10)
             name.update()
             Label(productFrame, text='Cantidad: '+product.quantity, fg=colorBlue, bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=10)

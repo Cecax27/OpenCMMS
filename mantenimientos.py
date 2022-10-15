@@ -419,10 +419,3 @@ def find(overdue = False, employerId = 0, status = None):
 
 if __name__ == '__main__':
     print(findProducts(116))
-
-
-
-
-
-
-

@@ -246,6 +246,8 @@ class RequisitionDetail():
         if self.id == 0:
             sql.petitionWithParam("INSERT INTO requisitions_detail VALUES (NULL, ?, ?, ?, ?, ?)", (self.requisitionId, self.product.id, self.quantity, self.comment, self.status))
             self.id = sql.peticion("SELECT MAX(id) AS id FROM requisitions_detail")[0][0]
+        else:
+            sql.petitionWithParam(f"UPDATE requisitions_detail SET quantity = ?, comment = ?, status = ? WHERE id = {self.id}", (self.quantity, self.comment, self.status))
         
 #Functions------
 def checkDatabase():
@@ -300,9 +302,9 @@ def getProducts(order = 'name', quantity = 0):
         list.append(Product(id = id[0]))
     return list
 
-def getRequisitions(lastest = True, quantity = 0):
+def getRequisitions(lastest = True, quantity = 0, order = 'id'):
     list = []
-    for id in sql.peticion(f"SELECT id FROM requisitions ORDER BY id {'DESC' if lastest else 'ASC'} {'' if quantity == 0 else 'LIMIT '+str(quantity)}"):
+    for id in sql.peticion(f"SELECT id FROM requisitions ORDER BY {order} {'DESC' if lastest else 'ASC'} {'' if quantity == 0 else 'LIMIT '+str(quantity)}"):
         list.append(Requisition(id = id[0]))
     return list
     
