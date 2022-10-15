@@ -79,7 +79,7 @@ class Product():
         self.brand = rawData[4]
         self.model = rawData[5]
         self.quantity = rawData[6]
-        self.findMovements()
+        self.recalculateQuantity()
         return 1
     
     def recalculateQuantity(self):
@@ -113,7 +113,7 @@ class Product():
         newMovement.quantity = quantity
         newMovement.comment = comment
         newMovement.origin = origin
-        newMovement.origin_id = origin_id
+        newMovement.origin_id = origin_id if origin != None else None
         newMovement.save()
         self.movements.append(newMovement)
         self.recalculateQuantity()
@@ -294,6 +294,12 @@ def findByName(name):
         list.append(Product(id = id[0]))
     return list
 
+def getProducts(order = 'name', quantity = 0):
+    list = []
+    for id in sql.peticion(f"SELECT id FROM inventory ORDER BY {order} {'' if quantity == 0 else 'LIMIT '+str(quantity)}"):
+        list.append(Product(id = id[0]))
+    return list
+
 def getRequisitions(lastest = True, quantity = 0):
     list = []
     for id in sql.peticion(f"SELECT id FROM requisitions ORDER BY id {'DESC' if lastest else 'ASC'} {'' if quantity == 0 else 'LIMIT '+str(quantity)}"):
@@ -305,15 +311,16 @@ def getRequisitions(lastest = True, quantity = 0):
 
 def crearRequisiion():
     newRequisition = Requisition()
-    newRequisition.date = datetime.now()
-    newRequisition.status = STATUS_DRAFT
-    newRequisition.description = 'Nueva requisición de prueba'
+    newRequisition.date = datetime(year=2022,month=9,day=5)
+    newRequisition.status = STATUS_DELIVERED
+    newRequisition.description = 'Requisición antigua'
     
-    newRequisition.addProduct(1, 10, comment='Prueba 1')
+    newRequisition.addProduct(23, 100, comment='')
+    newRequisition.addProduct(22, 10, comment='Para almacenar como refacción.')
     print(newRequisition)
     print(newRequisition.products[0])
     newRequisition.save()
     
 if __name__ == '__main__':
     #checkDatabase()
-    print(getRequisitions(lastest=False))
+    Product(id=23).recalculateQuantity()

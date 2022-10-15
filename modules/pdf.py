@@ -61,9 +61,12 @@ def createRequisitionReport(requisition, filename):
         lastPosition -= 20
         if product.comment != None:
             page.setFillColorRGB(0.4,0.4,0.4)
-            page.setFont("Normal",9)
-            page.drawString(50, lastPosition, str(product.comment))
-            lastPosition -= 20
+            description = page.beginText(50, lastPosition)
+            description.setFont("Normal",9)
+            for line in range(0,int(len(product.comment)/124)+1,1):
+                description.textLine(product.comment[line*124:(line+1)*124])
+                lastPosition -= 20
+            page.drawText(description)
     
     page.showPage()
     page.save()

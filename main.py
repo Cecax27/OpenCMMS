@@ -5,7 +5,7 @@ from tkinter import *
 from tkinter.filedialog import asksaveasfile
 import tkinter.ttk as ttk
 from tkinter import messagebox
-from turtle import width
+from turtle import back, width
 import empleados
 import equipos
 import actividades
@@ -73,8 +73,12 @@ def clearMainFrame():
     
     global imgCorrective
     global imgPreventive
+    global imgIn
+    global imgOut
     imgCorrective = PhotoImage(file='img/corrective.png').subsample(8)
     imgPreventive = PhotoImage(file='img/preventive.png').subsample(8)
+    imgIn = PhotoImage(file='img/in.png')
+    imgOut = PhotoImage(file='img/out.png')
     
     mainFrame.destroy()
     mainFrame = Frame(root)
@@ -138,7 +142,7 @@ class Crm:
             ).place(x=1.25*root.winfo_width()/6, y=4)
 
         Button(menuFrame, 
-            text='Actividades',
+            text='Inventario',
             font=("Segoe UI", "11", "normal"),
             bg=colorButton,
             fg="#ffffff",
@@ -147,21 +151,21 @@ class Crm:
             width=12,
             borderwidth=5,
             relief=FLAT,
-            command=self.actividades
+            command=self.inventory.inventoryMainWindow
             ).place(x=2.25*root.winfo_width()/6, y=4)
 
-        Button(menuFrame, 
-            text='Departamentos',
-            font=("Segoe UI", "11", "normal"),
-            bg=colorButton,
-            fg="#ffffff",
-            bd=0,
-            highlightthickness=0,
-            width=12,
-            borderwidth=5,
-            relief=FLAT,
-            command=self.departamentos
-            ).place(x=3.25*root.winfo_width()/6, y=4)
+        # Button(menuFrame, 
+        #     text='Departamentos',
+        #     font=("Segoe UI", "11", "normal"),
+        #     bg=colorButton,
+        #     fg="#ffffff",
+        #     bd=0,
+        #     highlightthickness=0,
+        #     width=12,
+        #     borderwidth=5,
+        #     relief=FLAT,
+        #     command=self.departamentos
+        #     ).place(x=3.25*root.winfo_width()/6, y=4)
 
         Button(menuFrame, 
             text='Requisiciones',
@@ -1488,6 +1492,12 @@ class Mantenimientos(Crm):
     def newCorrective(self):
         global mainFrame
         clearMainFrame()
+        
+        #Var
+        self.newMaintenance = mantenimientos.Maintenance(type = mantenimientos.Corrective)
+        self.searchString = StringVar(mainFrame)
+        descriptionString = StringVar(mainFrame)
+        self.quantity = StringVar(mainFrame)
 
         self.selectedPlants = []
 
@@ -1501,14 +1511,14 @@ class Mantenimientos(Crm):
         self.cal.place(x=10, y=70)
 
         #Responsible
-        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=280)
+        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=300, y=40)
         self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = empleados.ver('nombre'))
-        self.responsible.place(x=10, y=310)
+        self.responsible.place(x=300, y=70  )
 
         #Description
-        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=350)
-        self.description = Text(mainFrame, width=40, height=13, font=("Segoe UI", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
-        self.description.place(x=10, y=380)
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=300, y=100)
+        self.description = Text(mainFrame, width=120, height=4, font=("Segoe UI", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
+        self.description.place(x=300, y=130)
 
         Button(mainFrame, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveCorrective).place(x=root.winfo_width()-100, y=10)
 
@@ -1517,47 +1527,109 @@ class Mantenimientos(Crm):
         self.listaNombresDepartamentos=[]
         for x in self.listaDepartamentos:
             self.listaNombresDepartamentos.append(x[1])
-        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=10)
+        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=450, y=40)
         self.departamento = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresDepartamentos)
         self.departamento.bind("<<ComboboxSelected>>", self.ActualizarAreas)
-        self.departamento.place(x=400, y=40)
+        self.departamento.place(x=450, y=70)
 
         #Area
         self.listaNombresAreas=[]
-        Label(mainFrame, text='Área', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=600, y=10)
+        Label(mainFrame, text='Área', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=600, y=40)
         self.area = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresAreas)
         self.area.bind("<<ComboboxSelected>>", self.ActualizarEquipos)
-        self.area.place(x=600, y=40)
+        self.area.place(x=600, y=70)
 
         #Plants table
-        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=80)
+        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=280)
         self.tabla = crearTabla(
             ['Nombre', 'Descripción'],
             [1,],
-            [120, 150],
+            [200, 200],
             [('','Seleccione un area y departamento'),],
             mainFrame,
-            10, 
+            5, 
             ''
         )
-        self.tabla.place(x=400, y=110)
+        self.tabla.place(x=10, y=310)
 
-        Button(mainFrame, text='Seleccionar equipo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.selectPlant).place(x=400, y=350)
+        Button(mainFrame, text='+',font=("Segoe UI", "11", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.selectPlant).place(x=420, y=320)
 
         #Plants table
-        Label(mainFrame, text='Equipos seleccionados', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=800, y=80)
+        Label(mainFrame, text='Equipos seleccionados', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=450)
         self.selectedPlantsTable = crearTabla(
             ['Nombre', 'Descripción'],
             [1,],
-            [120, 150],
+            [200, 200],
             [('','Aún no hay nada seleccionado'),],
             mainFrame,
-            10, 
+            5, 
             ''
         )
-        self.selectedPlantsTable.place(x=800, y=110)
+        self.selectedPlantsTable.place(x=10, y=480)
 
-        Button(mainFrame, text='Deseleccionar equipo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.deselectPlant).place(x=800, y=350)
+        Button(mainFrame, text='-',font=("Segoe UI", "11", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.deselectPlant).place(x=420, y=490)
+
+        #Search
+        Label(mainFrame, text='Productos usados', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=500, y=230)
+        search = Frame(mainFrame)
+        search.config(bg='#ECECEC', width=400, height=30)
+        search.place(x=500 , y=260)
+        global searchImg 
+        searchImg= PhotoImage(file='img/search.png')
+        Label(search, image = searchImg, bd=0, width=12, heigh=12).place(x=12, y=9)
+        searchEntry = Entry(search, width=50, textvariable=self.searchString, font=("Segoe UI", "10", "normal"), foreground="#222222", background='#ECECEC', highlightthickness=0, relief=FLAT)
+        searchEntry.place(x=30, y=4)
+        searchEntry.bind('<Key>', self.updateInventorySearch)
+        
+        #Products table
+        self.productsTable = crearTabla(['Nombre', 'Descripción', 'Marca', 'Modelo'], [1,], [100,100,100,100], [['','','',''],], mainFrame, 4, '' )
+        self.productsTable.place(x=500, y=300)
+        
+        #Coment
+        Label(mainFrame, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=500, y=430)
+        self.comment = Text(mainFrame, width=43, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=3)
+        self.comment.place(x=590, y=430)
+        
+        #Quantity
+        Label(mainFrame, text='Cantidad',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=500, y=500)
+        Entry(mainFrame, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=590, y=500)
+        
+        #Add product
+        Button(mainFrame, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToMaintenance).place(x=820, y=530)
+        
+        #Products
+        Label(mainFrame, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=950, y=230)
+        
+        self.productsFrame = ScrollableFrame(mainFrame, width=380, height=200, x=950, y=260)
+        self.productsFrame.place(x=950, y=260)
+        
+    def updateInventorySearch(self, event):
+        productsList = inventory.findByName(self.searchString.get())
+        self.productsTable.delete(*self.productsTable.get_children())
+        for product in productsList:
+            self.productsTable.insert('', 0, id=product.id, text=product.name, values=(product.description, product.brand, product.model))
+            
+    def addProductToMaintenance(self):
+        self.newMaintenance.addMovement(productId = self.productsTable.focus(), quantity=int(self.quantity.get()), comment=None if self.comment.get('1.0',END) == '' else self.comment.get('1.0',END))
+        self.quantity.set('')
+        self.comment.delete("1.0", END)
+        self.updateProductsFrame()
+        
+    def updateProductsFrame(self):
+        self.productsFrame.clear()
+        for mov in self.newMaintenance.products:
+            product = inventory.Product(id = mov.product)
+            productFrame = Frame(self.productsFrame.scrollableFrame)
+            productFrame.config(bg=colorGray, highlightthickness=0, width=360, height=70)
+            productFrame.pack(pady=5, padx=5)
+            #Plant
+            name = Label(productFrame, text=product.name, fg='#000000', bg=colorGray, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
+            name.place(x=10, y=10)
+            name.update()
+            Label(productFrame, text='Cantidad: '+str(mov.quantity), fg=colorBlue, bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=10)
+            Label(productFrame, text=mov.comment, fg='#4d4d4d', bg=colorGray, font=("Segoe UI", "9", "normal"), wraplength=600, justify='left').place(x=10, y=35)
+            productFrame.update()
+            #Button(productFrame, text=' X ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=1, relief=FLAT, command=self.addProductToRequisition).place(x=productFrame.winfo_width()-35, y=10)
 
     def selectPlant(self):
         plantId = self.tabla.focus()
@@ -1587,17 +1659,16 @@ class Mantenimientos(Crm):
             self.selectedPlantsTable.insert('', 0, id = x[0], values = x[2], text = x[1],tags=("mytag",))
 
     def saveCorrective(self):
-        maintenanceData = mantenimientos.Maintenance(type = 'corrective')
-        maintenanceData.date = self.cal.selection_get()
-        maintenanceData.responsible = empleados.ver('id')[self.responsible.current()]
-        maintenanceData.description = self.description.get('1.0', END)
-        maintenanceData.plants = self.selectedPlants
+        self.newMaintenance.date = self.cal.selection_get()
+        self.newMaintenance.responsible = empleados.ver('id')[self.responsible.current()]
+        self.newMaintenance.description = self.description.get('1.0', END)
+        self.newMaintenance.plants = self.selectedPlants
         
-        maintenanceData.save()
+        self.newMaintenance.save()
 
-        texto = f"El mantenimiento ha sido registrado con id {maintenanceData.id}."
+        texto = f"El mantenimiento ha sido registrado con id {self.newMaintenance.id}."
         messagebox.showinfo(title='Mantenimiento registrado', message=texto)
-        self.displayMaintenance(maintenanceData.id)
+        self.displayMaintenance(self.newMaintenance.id)
 
     def asignarActividad(self):
         #Get activity
@@ -1673,8 +1744,7 @@ class Mantenimientos(Crm):
             texto = f"Se han programado {len(self.noProgramados)} mantenimientos con éxito."
             messagebox.showinfo(title='Mantenimientos programados', message=texto)    
         else:
-            mant = mantenimientos.Maintenance()
-            mant.findById(id)
+            mant = mantenimientos.Maintenance(id = id)
             nextMaintenance = mant.scheduleNext()
             if nextMaintenance == 1:
                 messagebox.showwarning(title='Error', message='El mantenimiento no se puede programar. Consulte la ayuda para más información.')
@@ -1686,8 +1756,7 @@ class Mantenimientos(Crm):
         if id == '':
             messagebox.showwarning(title='No hay nada seleccionado', message='Seleccione un mantenimiento.')
         else:
-            select = mantenimientos.Maintenance()
-            select.findById(id)
+            select = mantenimientos.Maintenance(id = id)
             select.status = mantenimientos.Done
             select.date = datetime.now()
             select.save()
@@ -1930,11 +1999,169 @@ class Empleados():
 def func_displayRequisition(id, object):
     return lambda event: object.parent.inventory.displayRequisition(id)
 
+def func_displayProduct(id, object):
+    return lambda event: object.parent.inventory.displayProduct(id)
+
 class Inventory():
     
     def __init__(self, parent) -> None:
         global root
         self.parent = parent
+        
+    def inventoryMainWindow(self):
+        global mainFrame
+        clearMainFrame()
+        
+        Label(mainFrame, text='Inventario', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        productsList = inventory.getProducts()
+        
+        productsFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
+        productsFrame.place(x=0, y=0)
+        
+        width = 300
+        height = 200
+        itemX = int((root.winfo_width()-40)/width)
+        itemSeparation = ((root.winfo_width()-40)-(width*itemX))/(itemX+4)
+        for product in productsList:
+            productNumber = productsList.index(product)
+            frame = Frame(productsFrame.scrollableFrame)
+            frame.config(width=width, height=height, bg=colorGray)
+            frame.bind('<Button-1>', func_displayProduct(product.id, self))
+            productsFrame.scrollableFrame.update()
+            frame.grid(column=productNumber%itemX, row=int(productNumber/itemX), pady=itemSeparation, padx=itemSeparation)
+            title = Label(frame, text=product.name, bg=colorGray, fg='#444444',font=("Segoe UI", "10", "bold"), wraplength=180, justify=LEFT)
+            title.place(x=10, y=10)
+            title.update()
+            description = Label(frame, text=product.description, bg=colorGray,fg='#666666', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT)
+            description.place(x=10, y=10+title.winfo_height())
+            description.update()
+            Label(frame, text=(product.brand if product.brand != None else '')+(' - '+product.model if product.model != None else ''), bg=colorGray,fg='#555555', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT).place(x=10, y=20+description.winfo_height()+title.winfo_height())
+            Label(frame, text=str(product.quantity)+ ' disponible', bg=colorGray,fg=colorRed if product.quantity==0 else colorGreen, font=("Segoe UI", "10", "normal")).place(x=10, y=height-30)
+            
+    def displayProduct(self, id):
+        global mainFrame
+        clearMainFrame()
+        product = inventory.Product(id = id)
+        
+        #Tittle
+        Label(mainFrame, text='Producto', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        Label(mainFrame, text='ID '+str(product.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
+        #Name
+        Label(mainFrame, text=product.name, bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
+        #Description
+        Label(mainFrame, text=product.description, bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=20, y=110)
+        #Quantity
+        Label(mainFrame, text='Cantidad disponbile: '+str(product.quantity), bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=20, y=150)
+        #In
+        Button(mainFrame, text='Entrada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newInputInventory(product)).place(x=900, y=35)
+        #Out
+        if product.quantity > 0:    
+            Button(mainFrame, text='Salida',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newOutputInventory(product)).place(x=1000, y=35)
+            
+        #Movements
+        Label(mainFrame, text='Movimientos de inventario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
+        
+        movementsFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-60, height=root.winfo_height()-300, x=20, y=230)
+        movementsFrame.place(x=20, y=230)
+        
+        for mov in product.movements:
+            movNumber = product.movements.index(mov)
+            backColor = colorGray if movNumber%2==0 else colorWhite
+            productFrame = Frame(movementsFrame.scrollableFrame)
+            productFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=70)
+            productFrame.pack(pady=1)
+            #Type
+            Label(productFrame, image=imgIn if mov.type == inventory.INPUT else imgOut, bd=0, width=40, height=40, bg=backColor).place(x=15, y=15)
+            #Date
+            Label(productFrame, text=datetime.date(mov.date).strftime('%d/%m/%Y'), fg='#000000', bg=backColor, font=("Segoe UI", "10", "normal")).place(x=65, y=10)
+            #Quantity
+            Label(productFrame, text='Cantidad: '+str(mov.quantity), fg='#000000', bg=backColor, font=("Segoe UI", "10", "normal")).place(x=65, y=35)
+            #Origin
+            Label(productFrame, text=(mov.origin+' '+str(mov.origin_id)) if mov.origin != None else 'Movimiento del usuario', fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal")).place(x=200, y=10)
+            #Comment
+            Label(productFrame, text=mov.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=600, justify=LEFT).place(x=200, y=35)
+            
+    def newInputInventory(self, product):
+        self.window = Toplevel()
+        self.window.title('Registrar entrada')
+        
+        mainframe = Frame(self.window)
+        mainframe.config(bg=colorWhite, width=400, height=500)
+        mainframe.pack()
+        
+        #Var
+        inputQuantity = IntVar(mainframe)
+        inputComment = StringVar(mainframe)
+        inputOrigin = StringVar(mainframe)
+        inputOriginId = IntVar(mainframe)
+        
+        #Tittle
+        Label(mainframe, text='Registrar entrada', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        
+        #Quantity
+        Label(mainframe, text='Cantidad',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=70)
+        Entry(mainframe, width=50, textvariable=inputQuantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=100)
+        
+        #Description
+        Label(mainframe, text='Comentario',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=140)
+        Entry(mainframe, width=50, textvariable=inputComment, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=170)
+        
+        #Origin
+        Label(mainframe, text='Origen',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=210)
+        Entry(mainframe, width=50, textvariable=inputOrigin, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=240)
+        
+        #Model
+        Label(mainframe, text='Id de origen',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=280)
+        Entry(mainframe, width=50, textvariable=inputOriginId, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=310)
+        
+        #Save
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveInputInventory(product, inputQuantity.get(), inputComment.get(), inputOrigin.get(), inputOriginId.get())).place(x=20, y=380)
+        
+    def saveInputInventory(self, product, quantity, comment, origin, originId):
+        product.addMovement(datetime.now(),inventory.INPUT, quantity, comment, origin if origin != '' else None, originId if origin != '' else None)
+        self.window.destroy()
+        self.displayProduct(product.id)
+    
+    def newOutputInventory(self, product):
+        self.window = Toplevel()
+        self.window.title('Registrar salida')
+        
+        mainframe = Frame(self.window)
+        mainframe.config(bg=colorWhite, width=400, height=500)
+        mainframe.pack()
+        
+        #Var
+        outputQuantity = IntVar(mainframe)
+        outputComment = StringVar(mainframe)
+        outputOrigin = StringVar(mainframe)
+        outputOriginId = IntVar(mainframe)
+        
+        #Tittle
+        Label(mainframe, text='Registrar salida', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        
+        #Quantity
+        Label(mainframe, text='Cantidad',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=70)
+        Entry(mainframe, width=50, textvariable=outputQuantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=100)
+        
+        #Description
+        Label(mainframe, text='Comentario',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=140)
+        Entry(mainframe, width=50, textvariable=outputComment, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=170)
+        
+        #Origin
+        Label(mainframe, text='Origen',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=210)
+        Entry(mainframe, width=50, textvariable=outputOrigin, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=240)
+        
+        #Model
+        Label(mainframe, text='Id de origen',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=280)
+        Entry(mainframe, width=50, textvariable=outputOriginId, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=310)
+        
+        #Save
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveOutputInventory(product, outputQuantity.get(), outputComment.get(), outputOrigin.get(), outputOriginId.get())).place(x=20, y=380)
+    
+    def saveOutputInventory(self, product, quantity, comment, origin, originId):
+        product.addMovement(datetime.now(),inventory.OUTPUT, quantity, comment, origin if origin != '' else None, originId if origin != '' else None)
+        self.window.destroy()
+        self.displayProduct(product.id)
         
     def requisitionsMainWindow(self):
         global mainFrame
@@ -1968,7 +2195,7 @@ class Inventory():
         Label(mainFrame, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
         Label(mainFrame, text='ID '+str(req.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
         Label(mainFrame, text=req.status, bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
-        Label(mainFrame, text=req.date, bg="#ffffff", font=("Segoe UI", "14", "normal")).place(x=20, y=120)
+        Label(mainFrame, text=datetime.date(req.date).strftime("%a %d %B %Y"), bg="#ffffff", font=("Segoe UI", "14", "normal")).place(x=20, y=120)
         
         #Save
         Button(mainFrame, text='Guardar en PDF',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveRequisitionPDF(req)).place(x=934, y=35)
@@ -1983,6 +2210,26 @@ class Inventory():
         #Make confirmed
         if req.status == inventory.STATUS_REQUESTED:    
             Button(mainFrame, text='Marcar confirmada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(req, inventory.STATUS_CONFIRMED)).place(x=1050, y=35)
+            
+        #Products
+        Label(mainFrame, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
+        
+        self.productsFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-60, height=root.winfo_height()-300, x=20, y=230)
+        self.productsFrame.place(x=20, y=230)
+        
+        for product in req.products:
+            productNumber = req.products.index(product)
+            backColor = colorGray if productNumber%2==0 else colorWhite
+            productFrame = Frame(self.productsFrame.scrollableFrame)
+            productFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=70)
+            productFrame.pack(pady=1)
+            #Plant
+            name = Label(productFrame, text=product.product.name, fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
+            name.place(x=10, y=10)
+            name.update()
+            Label(productFrame, text='Cantidad: '+str(product.quantity), fg=colorBlue, bg=backColor, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=10)
+            Label(productFrame, text=product.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=600, justify='left').place(x=10, y=35)
+            productFrame.update()
             
     def changeStatus(self, requisition, status):
         requisition.changeStatus(status)
@@ -2048,6 +2295,7 @@ class Inventory():
             pass
         finally:
             messagebox.showinfo(title='Producto registrado', message='El producto se ha registrado correctamente.')
+            self.displayProduct(newProduct.id)
         return True
     
     def newCategory(self):
@@ -2175,7 +2423,6 @@ class Inventory():
     def saveRequisition(self):
         self.requisition.save()
         messagebox.showinfo(title='Requisición guardada', message=f"La requisición ha sido guardada con el ID {self.requisition.id}")
-        self.requisition.generatePDF(f"Requisicion {self.requisition.id}.pdf")
         self.window.destroy()
             
         

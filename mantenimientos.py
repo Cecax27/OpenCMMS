@@ -1,4 +1,5 @@
 from modules import sql
+from modules import inventory
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
@@ -28,6 +29,7 @@ class Maintenance:
         self.repeat = None
         self.previous = None
         self.next = None
+        self.products = []
         if(type == 'predictive'):
             self.status = '' #WIP
             self.type = Predictive
@@ -35,7 +37,7 @@ class Maintenance:
             self.status = Programmed
             self.type = Preventive
             self.activities = []
-        elif type == 'corrective':
+        elif type == Corrective:
             print('Creating corrective maintenance...')
             self.status = Done
             self.type = Corrective
@@ -76,11 +78,23 @@ class Maintenance:
             for i in self.activities:
                 agregarActividad(self.id, i.id)
                 print(f"Activity Id {i.id} added")
+                
+        if self.products != None:
+            for mov in self.products:
+                if mov.id == 0:
+                    mov.date = datetime.combine(self.date, datetime.min.time())
+                    mov.origin_id = self.id
+                    mov.save()
+                    
 
     def scheduleNext(self):
+        """Schedule the next maintenance in the database.
+
+        Returns:
+            Maintenance object: The new maintenance. True if the maintenance cannot be schedule.
+        """
         if self.status == Done and self.repeat != None and self.next==None:
-            newMaintenance = Maintenance()
-            newMaintenance.findById(self.id)
+            newMaintenance = Maintenance(id = self.id)
             newMaintenance.id = 0
             newMaintenance.status = Programmed
             newMaintenance.previous = self.id
@@ -88,20 +102,31 @@ class Maintenance:
             newMaintenance.save()
             self.next = newMaintenance.id
             self.save()
-            for activity in buscarActividades(self.id):
-                agregarActividad(newMaintenance.id, activity[2])
             print(f"The maintenance with ID {newMaintenance.id} was scheduled")
             return newMaintenance
         print("The maintenance can not be schedule")
         return 1
 
     def getActivities(self):
+        """Look for the activities of the maintenance.
+
+        Returns:
+            bool: True if there is an error.
+        """
         if self.type != Preventive:
             print(f"Error: The maintenance with ID {self.id} is not preventive type")
             return 1
         self.activities = buscarActividades(self.id)
 
     def findById(self, id):
+        """Look for the maintenance data in the database.
+
+        Args:
+            id (int): The maintenance id.
+
+        Returns:
+            bool: True if there is an error. False else.
+        """
         rawData = buscar(id)
         if len(rawData) == 0:
             print(f"Maintenance with ID {id} was not found")
@@ -123,16 +148,41 @@ class Maintenance:
         self.repeat = rawData[6]
         self.previous = rawData[7]
         self.next = rawData[8]
+        self.products = findProducts(self.id)
         #print(f"Maintenance with ID {id} was found")
         return 0
+    
+    def addMovement(self, productId = 0, product = None, quantity = 0, type = inventory.OUTPUT, comment = None):
+        newMov = inventory.InventoryMovement()
+        newMov.product = productId if productId != 0 else product.id
+        newMov.date = datetime.combine(self.date, datetime.min.time())
+        newMov.type = type
+        newMov.quantity = quantity
+        newMov.comment = comment
+        newMov.origin = inventory.MAINTENANCE
+        newMov.origin_id = self.id
+        self.products.append(newMov)
+        
+        
+        
 
     def cancel(self):
+        """Change the maintenance status to cancel in the database.
+
+        Returns:
+            bool: False if ok.
+        """
         self.status = Cancelled
         self.date = datetime.now()
         self.save()
         return 0
 
     def delete(self):
+        """Delete the maintenance in the database.
+
+        Returns:
+            bool: False if ok.
+        """
         for activity in buscarActividades(self.id):
             eliminarActividad(activity[0])
         eliminar(self.id)
@@ -188,6 +238,20 @@ def findCorrectiveActivity(id):
     if len(result) == 0:
         return False
     return result[0][0]   
+
+def findProducts(id):
+    """Look for the products used in the maintenance.
+
+    Args:
+        id (int): The maintenance id
+        
+    Returns:
+        list: a list with InventoryMovement objects.
+    """
+    list = []
+    for id in sql.peticion(f"SELECT id FROM inventory_detail WHERE origin = '{inventory.MAINTENANCE}' AND origin_id = {id}"):
+        list.append(inventory.InventoryMovement(id = id[0]))
+    return list
 
 def editar(id, fecha, estado, responsable, comentario, tipo, tiempoProgramado, anteriorId, siguienteId):
     """Edita un mantenimiento y lo guarda en la base de datos.
@@ -354,7 +418,7 @@ def find(overdue = False, employerId = 0, status = None):
     
 
 if __name__ == '__main__':
-    print(find(status=Programmed, employerId=15))
+    print(findProducts(116))
 
 
 
