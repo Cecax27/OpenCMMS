@@ -1,5 +1,11 @@
-from modules import sql
-import areas
+try:
+    import sql
+except:
+    from modules import sql
+try:
+    import areas
+except:
+    from modules import areas
 
 class Plant:
     def __init__(self, id = 0):
@@ -11,6 +17,7 @@ class Plant:
         self.description = ''
         self.area = areas.Area()
         self.department = areas.Department()
+        self.activities = []
         
     def __repr__(self):
         return f"Plant ID {self.id}:\n\tName: {self.name}\n\tDescription: {self.description}\n\tDepartment: {self.department}\tArea: {self.area}\n"
@@ -26,6 +33,7 @@ class Plant:
         rawDataArea = areas.buscar(rawData[3])
         self.area = areas.Area(id =rawDataArea[0])
         self.department = areas.Department(id = rawDataArea[4])
+        self.activities = []
 
 def new(nombre, descripcion, area):
     """Inserta un nuevo equipo en la base de datos.

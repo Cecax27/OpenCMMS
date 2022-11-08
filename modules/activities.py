@@ -1,5 +1,11 @@
-from modules import sql
-import equipos
+try:
+    import sql
+except:
+    from modules import sql
+try:
+    import plants
+except:
+    from modules import plants
 
 #Classes
 class Activity:
@@ -33,7 +39,7 @@ class Activity:
         else:
             self.time = rawData[3]
         if assigned:
-            self.plant = equipos.Plant(id = rawData[4])
+            self.plant = plants.Plant(id = rawData[4])
 
     def save(self):
         """Save the activity in the database"""

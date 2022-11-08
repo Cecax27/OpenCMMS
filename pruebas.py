@@ -1,22 +1,34 @@
-import tkinter as tk
-from tkinter import ttk
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from datetime import datetime
 
-root = tk.Tk()
-container = ttk.Frame(root)
-canvas = tk.Canvas(container)
-scrollbar = ttk.Scrollbar(container, orient='vertical', command=canvas.yview)
-scrollable_frame = ttk.Frame(canvas)
+requisitionNumber = 1
+date = datetime.now()
 
-scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
-canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-canvas.configure(yscrollcommand=scrollbar.set)
 
-for i in range(50):
-	ttk.Label(scrollable_frame, text="Sample scrolling lable").pack()
+w, h = letter
+pdfmetrics.registerFont(TTFont('Normal', 'segoeui.ttf'))
+pdfmetrics.registerFont(TTFont('Semibold', 'seguisb.ttf'))
+pdfmetrics.registerFont(TTFont('Bold', 'segoeuib.ttf'))
 
-container.pack()
-canvas.pack(side="left", fill="both", expand=True)
-scrollbar.pack(side="right", fill="y")
-
-root.mainloop()
+page = canvas.Canvas('prueba.pdf', pagesize=letter)
+page.drawImage("img/logo.png", w-180, h-65, width=130, height=37)
+page.setFont("Bold",16)
+page.drawString(50, h - 50, 'Departamento eléctrico') #Draw text
+page.setFont("Semibold",22)
+page.drawString(50, h - 90, 'Requisición de compra') 
+page.setFillColorRGB(0.4, 0.4, 0.4)
+page.setFont("Normal",12)
+page.drawString(50, h - 170, 'Número') 
+page.drawString(115	, h - 170, 'Fecha') 
+page.setFillColorRGB(0,0,0)
+page.setFont("Semibold",12)
+page.drawString(100, h - 170, str(requisitionNumber)) 
+page.drawString(155	, h - 170, date.strftime("%d / %m / %Y")) 
+page.setStrokeColorRGB(0.6,0.6,0.6)
+page.line(50, h-190, w-50, h-190)
+page.showPage()
+page.save()

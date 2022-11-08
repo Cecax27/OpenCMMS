@@ -1,4 +1,7 @@
-from modules import sql
+try:
+    import sql
+except:
+    from modules import sql
 
 #Classes
 class Employer():

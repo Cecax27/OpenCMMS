@@ -206,6 +206,11 @@ class Requisition():
         else:
             sql.petitionWithParam(f"UPDATE requisitions SET date = ?, status = ?, description = ? WHERE id = {self.id}", (self.date, self.status, self.description))
     
+    def delete(self):
+        for product in self.products:
+            product.delete()
+        sql.peticion(f"DELETE FROM requisitions WHERE id = {self.id}")
+    
     def changeStatus(self, status, save = True):
         self.status = status
         if save == True:
@@ -227,7 +232,7 @@ class RequisitionDetail():
         else:
             self.product = Product(id = productId)
         self.quantity = quantity
-        self.comment = comment
+        self.comment = comment if comment!='\n' else None
         self.status = status
         self.requisitionId = requisitionId
         
@@ -248,7 +253,10 @@ class RequisitionDetail():
             self.id = sql.peticion("SELECT MAX(id) AS id FROM requisitions_detail")[0][0]
         else:
             sql.petitionWithParam(f"UPDATE requisitions_detail SET quantity = ?, comment = ?, status = ? WHERE id = {self.id}", (self.quantity, self.comment, self.status))
-        
+    
+    def delete(self):
+        sql.peticion(f"DELETE FROM requisitions_detail WHERE id = {self.id}")
+            
 #Functions------
 def checkDatabase():
     sql.peticion('''CREATE TABLE IF NOT EXISTS "requisitions" (
@@ -271,7 +279,7 @@ def checkDatabase():
 	PRIMARY KEY("id" AUTOINCREMENT)
 );''')
     
-    return sql.peticion('''CREATE TABLE IF NOT EXISTS "inventory_detail" (
+    sql.peticion('''CREATE TABLE IF NOT EXISTS "inventory_detail" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"date"	BLOB NOT NULL,
 	"type"	TEXT NOT NULL,

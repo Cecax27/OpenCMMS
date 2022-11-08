@@ -6,17 +6,19 @@ from tkinter.filedialog import asksaveasfile
 import tkinter.ttk as ttk
 from tkinter import messagebox
 from turtle import back, width
-import empleados
-import equipos
-import actividades
-import areas
-import mantenimientos
+import modules.employers as employers
+import modules.plants as plants
+import modules.activities as activities
+import modules.areas as areas
+import modules.maintenances as maintenances
 from tkcalendar import Calendar
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
 from modules.ui.scrollableFrame import *
 from modules import inventory
+from modules import sql
+from modules import workorders
 import locale
 
 #locale.setlocale(locale.LC_ALL, 'es-ES')
@@ -211,7 +213,7 @@ class Crm:
         lblMain = Label(self.mainframe, text='Actividades')
         lblMain.grid(column=0, row=0)
 
-        listaActividades = actividades.ver()
+        listaActividades = activities.ver()
         self.tablaActividades = ttk.Treeview(self.mainframe, height = 10, columns = ('descripcion', 'tiempo'), selectmode = 'browse')
         self.tablaActividades.grid(row = 2, column = 0, columnspan = 5)
         self.tablaActividades.heading('#0', text='Nombre', anchor=CENTER)
@@ -318,7 +320,7 @@ class Crm:
         self.descripcion.grid(column=1,row=1)
 
          #Responsable------------
-        listaEmpleados = empleados.ver()
+        listaEmpleados = employers.ver()
         listaNombres = []
         for x in listaEmpleados:
             listaNombres.append(x[2])
@@ -337,7 +339,7 @@ class Crm:
         btCancelar = Button(self.frame, text='Cancelar', command=self.ventana.destroy).grid(column=1, row=3)
 
     def areasModificarGuardar(self):
-        codigo = empleados.buscar(self.responsable.get())[0][1]
+        codigo = employers.buscar(self.responsable.get())[0][0]
         areas.modificar(self.area[0],self.nombre.get(), self.descripcion.get(), codigo)
         self.ventana.destroy()
         self.areas()    
@@ -575,7 +577,7 @@ class Areas():
         self.descripcion.grid(column=1,row=1, padx=5, pady=5)
 
         #Responsable------------
-        self.listaEmpleados = empleados.ver()
+        self.listaEmpleados = employers.ver()
         self.listaNombres=[]
         self.dictEmpleado = {}
         for x in self.listaEmpleados:
@@ -600,7 +602,7 @@ class Areas():
     def guardar(self):
         codigoDepartamento = self.listaDepartamentos[self.listaNombresDepartamentos.index(self.departamento.get())][0]
         #print(self.dictEmpleado[self.responsable.get()])
-        codigo = empleados.buscar(self.dictEmpleado[self.responsable.get()])[1]
+        codigo = employers.buscar(self.dictEmpleado[self.responsable.get()])[1]
         idDepartamento = self.listaDepartamentos[0]
         areas.new(self.nombre.get(),  self.descripcion.get(), codigo, codigoDepartamento)
         texto = 'El área ' + self.nombre.get() + ' ha sido registrada.'
@@ -643,7 +645,7 @@ class Areas():
         self.descripcion.grid(column=1,row=1, padx=5, pady=5)
 
         #Responsable------------
-        self.listaEmpleados = empleados.ver()
+        self.listaEmpleados = employers.ver()
         self.listaNombres=[]
         for x in self.listaEmpleados:
             self.listaNombres.append(x[2])
@@ -685,7 +687,7 @@ class Areas():
         text = self.tabla.item(id, option='text')
         codigoDepartamento = self.listaDepartamentos[self.listaNombresDepartamentos.index(self.departamento.get())][0]
         #print(self.responsable.get())
-        codigo = empleados.buscar(self.responsable.get())[0][1]
+        codigo = employers.buscar(self.responsable.get())[0][1]
         idDepartamento = self.listaDepartamentos[0]
         areas.modificar(text, self.nombre.get(),  self.descripcion.get(), codigo, codigoDepartamento)
         texto = 'El área ' + self.nombre.get() + ' ha sido modificada.'
@@ -798,8 +800,8 @@ class Equipos(Crm):
         self.info.place(x=250, y=0)
 
         #Seleccionando mantenimiento de base de datos
-        select = list(equipos.buscar(self.tabla.focus()))
-        selectMantenimientos = mantenimientos.buscarPorEquipo(self.tabla.focus())
+        select = list(plants.buscar(self.tabla.focus()))
+        selectMantenimientos = maintenances.buscarPorEquipo(self.tabla.focus())
         select[3] = areas.buscar(select[3])[1]
 
         #Labels principales
@@ -808,20 +810,20 @@ class Equipos(Crm):
 
         #Ultimo mantenimiento realizado
         Label(self.info, text="Último mantenimiento", fg='#666666', bg=colorGray, font=("Segoe UI", "9", "normal")).place(x=10, y=80)
-        text = mantenimientos.ultimoMantenimientoRealizado(select[0])
+        text = maintenances.ultimoMantenimientoRealizado(select[0])
         if text == None:
             text = 'No se ha hecho ninguno'
         else:
-            text = text[1]
+            text = text.date.strftime('%d/%m/%Y')
         Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Segoe UI", "9", "bold")).place(x=140, y=80)
 
         #Ultimo mantenimiento programado
         Label(self.info, text="Siguiente mantenimiento programado", fg='#666666', bg=colorGray, font=("Segoe UI", "9", "normal")).place(x=400, y=80)
-        text = mantenimientos.ultimoMantenimientoProgramado(select[0])
+        text = maintenances.ultimoMantenimientoProgramado(select[0])
         if text == None:
             text = 'No hay mantenimiento programado'
         else:
-            text = text[1]
+            text = text.date.strftime('%d/%m/%Y')
         Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Segoe UI", "9", "bold")).place(x=620, y=80)
 
         #Botones
@@ -843,24 +845,21 @@ class Equipos(Crm):
         mantFrame.create_window((0, 0), window=scrollableFrame, anchor='nw')
         mantFrame.configure(xscrollcommand=v.set)
         
-        
-
         #Mostrar mantenimientos
         for i in selectMantenimientos:
             #Creando frame
             mant = Frame(scrollableFrame)
             mant.config(bg=colorDarkGray, highlightthickness=0, highlightbackground="#cccccc", width=250, height=250)
-            #mant.place(x=10+selectMantenimientos.index(i)*260, y=0)
             mant.pack(pady=5, padx=5, side=LEFT)
             #Titular
-            Label(mant, text='Mantenimiento ID '+str(i[0]), fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=10)
-            Label(mant, text=i[1], fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
-            Label(mant, text=i[2], fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "normal"), wraplength=120, justify='right').place(x=100, y=30)
+            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=10)
+            Label(mant, text=i.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
+            Label(mant, text=i.status, fg='#111111', bg=colorDarkGray, font=("Segoe UI", "8", "normal"), wraplength=120, justify='right').place(x=100, y=30)
             #Descripción
-            Label(mant, text='Matenimiento '+i[5], fg='#333333', bg=colorDarkGray, font=("Segoe UI", "8", "bold")).place(x=10, y=60)
-            Label(mant, text=i[4], fg='#333333', bg=colorDarkGray, font=("Segoe UI", "8", "normal"), wraplength=230, justify='left').place(x=10, y=80)
+            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorDarkGray, font=("Segoe UI", "8", "bold")).place(x=10, y=60)
+            Label(mant, text=i.description, fg='#333333', bg=colorDarkGray, font=("Segoe UI", "8", "normal"), wraplength=230, justify='left').place(x=10, y=80)
             #Botón
-            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i[0], self)).place(x=180, y=200)
+            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self)).place(x=180, y=200)
 
         mantFrame.pack(side="top", fill="both", expand=True, padx=2, pady=2)
         v.pack(side="bottom", fill="x")
@@ -918,7 +917,7 @@ class Equipos(Crm):
         descripcion = self.descripcion.get()
         area = self.listaAreas[self.area.current()][0]
         #Enviando la solicitud
-        equipos.new(nombre, descripcion, area)
+        plants.new(nombre, descripcion, area)
 
         texto = 'El equipo ' + self.nombre.get() + ' ha sido registrado.'
         messagebox.showinfo(title='Equipo registrado', message=texto)
@@ -935,8 +934,8 @@ class Equipos(Crm):
         self.info.place(x=250, y=0)
 
         #Seleccionando mantenimiento de base de datos
-        select = list(equipos.buscar(self.tabla.focus()))
-        selectMantenimientos = mantenimientos.buscarPorEquipo(self.tabla.focus())
+        select = list(plants.buscar(self.tabla.focus()))
+        selectMantenimientos = maintenances.buscarPorEquipo(self.tabla.focus())
         select[3] = areas.buscar(select[3])[1]
         
         #Nombre------------
@@ -951,7 +950,7 @@ class Equipos(Crm):
 
         #Ultimo mantenimiento realizado
         Label(self.info, text="Último mantenimiento", fg='#666666', bg=colorGray, font=("Segoe UI", "9", "normal")).place(x=10, y=80)
-        text = mantenimientos.ultimoMantenimientoRealizado(select[0])
+        text = maintenances.ultimoMantenimientoRealizado(select[0])
         if text == None:
             text = 'No se ha hecho ninguno'
         else:
@@ -960,7 +959,7 @@ class Equipos(Crm):
 
         #Ultimo mantenimiento programado
         Label(self.info, text="Siguiente mantenimiento programado", fg='#666666', bg=colorGray, font=("Segoe UI", "9", "normal")).place(x=400, y=80)
-        text = mantenimientos.ultimoMantenimientoProgramado(select[0])
+        text = maintenances.ultimoMantenimientoProgramado(select[0])
         if text == None:
             text = 'No hay mantenimiento programado'
         else:
@@ -1001,8 +1000,8 @@ class Equipos(Crm):
         v.config(command=mantFrame.xview)
 
     def editarGuardar(self, id, nombre, descripcion):
-        equipoActual = equipos.buscar(id)
-        equipos.modificar(id, nombre,  descripcion, equipoActual[3])
+        equipoActual = plants.buscar(id)
+        plants.modificar(id, nombre,  descripcion, equipoActual[3])
         texto = 'El equipo ' + nombre + ' ha sido modificado.'
         messagebox.showinfo(title='Equipo modificada', message=texto)
         self.actualizarInformacion()
@@ -1010,11 +1009,11 @@ class Equipos(Crm):
     def editarActualizarEquipos(self, *event):
         #print(self.verTodos.get())
         if self.verTodos.get() == 1:
-            self.listaEquipos = equipos.ver()
+            self.listaEquipos = plants.ver()
         elif not hasattr(self, 'listaAreas'):
             self.listaEquipos = [[' ','Seleccione un area',' ']]
         else:
-            self.listaEquipos = equipos.buscarPorArea( self.listaAreas[self.area.current()][0])
+            self.listaEquipos = plants.buscarPorArea( self.listaAreas[self.area.current()][0])
             if len(self.listaEquipos) == 0:
                 self.listaEquipos = [[' ','Area sin equipos',' ']]
         self.tabla.delete(*self.tabla.get_children())
@@ -1033,10 +1032,10 @@ class Equipos(Crm):
         self.area["values"]=self.listaNombresAreas
 
     def eliminar(self, id):
-        nombre = equipos.buscar(id)[1]
+        nombre = plants.buscar(id)[1]
         texto = '¿En verdad desea eliminar el equipo ' + nombre +'? Esta eliminación será permantente'
         if messagebox.askyesno(title='¿Eliminar el equipo?', message=texto):
-            equipos.eliminar(id)
+            plants.eliminar(id)
             texto = 'El equipo ' + nombre + ' ha sido eliminado permantente.'
             messagebox.showinfo(title='Equipo eliminada', message=texto)
 
@@ -1047,7 +1046,7 @@ class Equipos(Crm):
 
         #Tabla de actividades para asignar--------------
         Label(self.info, text='Actividades disponibles',fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=150)
-        lista = actividades.ver()
+        lista = activities.ver()
         listaIds = []
         for activity in lista:
             listaIds.append(activity[0])
@@ -1068,7 +1067,7 @@ class Equipos(Crm):
 
         #Tabla de actividades asignadas-------------
         Label(self.info, text='Actividades asignadas',fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=root.winfo_width()/2-150, y=150)
-        lista = actividades.buscarPorEquipo(id)
+        lista = activities.buscarPorEquipo(id)
         listaIds = []
         for activity in lista:
             listaIds.append(activity[0])
@@ -1090,7 +1089,7 @@ class Equipos(Crm):
     def actualizarActividades(self, *event):
         id = self.tabla.focus()
         text = self.tabla.item(id, option='text')
-        self.listaActividadesAsignadas = actividades.buscarPorEquipo(id)
+        self.listaActividadesAsignadas = activities.buscarPorEquipo(id)
         if len(self.listaActividadesAsignadas) < 1:
             self.listaActividadesAsignadas =(['','Equipo sin actividades','',''],)
         self.tablaActividadesAsignadas.delete(*self.tablaActividadesAsignadas.get_children())        
@@ -1099,15 +1098,15 @@ class Equipos(Crm):
             self.tablaActividadesAsignadas.insert('', 0, values = (x[1],x[2],x[3]), text = x[0],tags=("mytag",))
 
     def asignarActividad(self, idActividad, idEquipo):
-        actividad = actividades.buscar(idActividad)
-        actividades.nuevaActividadAsignada(actividad[1], actividad[2], actividad[3], idEquipo)
+        actividad = activities.buscar(idActividad)
+        activities.nuevaActividadAsignada(actividad[1], actividad[2], actividad[3], idEquipo)
         texto = 'La actividad ' + actividad[1] + ' ha sido asignada al equipo.'
         messagebox.showinfo(title='Actividad asignada', message=texto)
 
 
     def eliminarActividadAsignada(self, idActividad):
-        actividad = actividades.buscarActividadAsignada(idActividad)
-        actividades.eliminarActividadAsignada(idActividad)
+        actividad = activities.buscarActividadAsignada(idActividad)
+        activities.eliminarActividadAsignada(idActividad)
         texto = 'La actividad ' + actividad[1] + ' ha sido eliminada.'
         messagebox.showinfo(title='Actividad eliminada', message=texto)
 
@@ -1137,7 +1136,7 @@ class Actividades():
         btCancelar = Button(self.frame, text='Cancelar', command=self.ventana.destroy).grid(column=1, row=3)    
 
     def nuevoGuardar(self):
-        actividades.new(self.nombre.get(), self.descripcion.get(),int(self.tiempo.get()))
+        activities.new(self.nombre.get(), self.descripcion.get(),int(self.tiempo.get()))
         texto = 'La actividad ' + self.nombre.get() + ' ha sido registrada.'
         messagebox.showinfo(title='Actividad registrada', message=texto)
         self.ventana.destroy()
@@ -1160,7 +1159,7 @@ class Actividades():
         self.tabla.column('#2', minwidth=0, width=120)
         self.tabla.column('#3', minwidth=0, width=60)
 
-        lista = actividades.ver()
+        lista = activities.ver()
         for x in lista:
             self.tabla.insert('', 0, values = (x[1],x[2],x[3]), text = x[0],tags=("mytag",))
 
@@ -1192,7 +1191,7 @@ class Actividades():
     def editarActualizar(self, event):
         id = self.tabla.focus()
         text = self.tabla.item(id, option='text')
-        resultado = actividades.buscar(text) 
+        resultado = activities.buscar(text) 
         #Nombre
         self.nombre.delete(0, "end")
         self.nombre.insert(0, resultado[0][1])
@@ -1206,7 +1205,7 @@ class Actividades():
     def editarGuardar(self):
         id = self.tabla.focus()
         text = self.tabla.item(id, option='text')
-        actividades.modificar(text, self.nombre.get(),  self.descripcion.get(), self.tiempo.get())
+        activities.modificar(text, self.nombre.get(),  self.descripcion.get(), self.tiempo.get())
         texto = 'La actividad ' + self.nombre.get() + ' ha sido modificada.'
         messagebox.showinfo(title='Actividad modificada', message=texto)
         self.ventana.destroy()
@@ -1228,7 +1227,7 @@ class Actividades():
         self.tabla.column('#2', minwidth=0, width=120)
         self.tabla.column('#3', minwidth=0, width=60)
 
-        lista = actividades.ver()
+        lista = activities.ver()
         for x in lista:
             self.tabla.insert('', 0, values = (x[1],x[2],x[3]), text = x[0])
 
@@ -1247,7 +1246,7 @@ class Actividades():
         texto = '¿En verdad desea eliminar la actividad ' + nombre +'? Esta eliminación será permantente'
 
         if messagebox.askyesno(title='¿Eliminar la actividad?', message=texto):
-            actividades.eliminar(clave)
+            activities.eliminar(clave)
             texto = 'El equipo ' + nombre + ' ha sido eliminado permantente.'
             messagebox.showinfo(title='Actividad eliminada', message=texto)
         self.ventana.destroy()
@@ -1272,7 +1271,7 @@ class Mantenimientos(Crm):
         Button(mainFrame, text='+ Mantenimiento correctivo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.newCorrective).place(x=200, y=40)
 
         #Show all maintenances
-        lista = mantenimientos.getAll()[0:10]
+        lista = maintenances.getAll()[0:10]
         allMaintenances = Frame(mainFrame, highlightthickness=0, bg="#ffffff")
         allMaintenances.place(x=10, y=90)
         canvas = Canvas(allMaintenances, bg="#ffffff", width=root.winfo_width()/2-70, height=root.winfo_height()-200, highlightthickness=0)
@@ -1289,7 +1288,7 @@ class Mantenimientos(Crm):
             #Tittle
             Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=45, y=10)
             #Date
-            Label(mant, text=i.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=45, y=30)
+            Label(mant, text=i.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=45, y=30)
             #Status
             if i.status == 'Realizado' or i.status == 'Realizado Programado':
                 color = colorGreen
@@ -1299,9 +1298,9 @@ class Mantenimientos(Crm):
                 color = colorRed
             Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
             #type
-            if i.type == mantenimientos.Corrective:
+            if i.type == maintenances.Corrective:
                 Label(mant, image = imgCorrective, bd=0, width=25, height=25).place(x=10, y=15)
-            elif i.type == mantenimientos.Preventive:
+            elif i.type == maintenances.Preventive:
                 Label(mant, image = imgPreventive, bd=0, width=25, height=25).place(x=10, y=15)
             else:
                 Label(mant, image = imgCorrective, bd=0, width=25, height=25).place(x=10, y=15)
@@ -1318,7 +1317,7 @@ class Mantenimientos(Crm):
         #Programmed maintenances
         Label(mainFrame, text='Mantenimientos programado', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=root.winfo_width()/2, y=60)
         
-        lista = mantenimientos.getProgrammed()
+        lista = maintenances.getProgrammed()
         
         programmedMaintenances = Frame(mainFrame, highlightthickness=0, bg="#ffffff")
         programmedMaintenances.place(x=root.winfo_width()/2, y=90)
@@ -1333,7 +1332,7 @@ class Mantenimientos(Crm):
             mant = Frame(scrollable_frameprogrammedMaintenances)
             mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
             mant.pack(pady=10, padx=15)
-            if i.date < datetime.date(datetime.now()):
+            if i.date < datetime.now():
                 actualColor = colorRed
             else:
                 actualColor = colorGreen
@@ -1341,7 +1340,7 @@ class Mantenimientos(Crm):
             #Titular
             Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
             #Date
-            Label(mant, text=i.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
+            Label(mant, text=i.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
             #Status
             if i.status == 'Realizado' or i.status == 'Realizado Programado':
                 color = colorGreen
@@ -1370,7 +1369,7 @@ class Mantenimientos(Crm):
         self.area["values"]=self.listaNombresAreas
 
     def ActualizarEquipos(self, *event):
-        self.listaEquipos = equipos.buscarPorArea( self.listaAreas[self.area.current()][0])
+        self.listaEquipos = plants.buscarPorArea( self.listaAreas[self.area.current()][0])
         if len(self.listaEquipos) == 0:
             self.listaEquipos = [[' ','Area sin equipos']]
         self.tabla.delete(*self.tabla.get_children())
@@ -1381,7 +1380,7 @@ class Mantenimientos(Crm):
 
     def actualizarActividades(self, *event):
         id = self.tabla.focus()
-        self.listaActividadesAsignadas = actividades.buscarPorEquipo(id)
+        self.listaActividadesAsignadas = activities.buscarPorEquipo(id)
         if len(self.listaActividadesAsignadas) < 1:
             self.listaActividadesAsignadas =(['','Equipo sin actividades'],)
         self.tablaActividadesAsignadas.delete(*self.tablaActividadesAsignadas.get_children())        
@@ -1394,7 +1393,7 @@ class Mantenimientos(Crm):
         
         self.varRepeat = IntVar()
         
-        self.newMaintenance = mantenimientos.Maintenance(type=mantenimientos.Preventive)
+        self.newMaintenance = maintenances.Maintenance(type=maintenances.Preventive)
         
         #Tittle
         Label(mainFrame, text='Mantenimiento preventivo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
@@ -1406,14 +1405,14 @@ class Mantenimientos(Crm):
         self.cal.place(x=10, y=70)
 
         #Estado------------
-        self.listaEstados=[mantenimientos.Done, mantenimientos.Programmed]
+        self.listaEstados=[maintenances.Done, maintenances.Programmed]
         Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=280)
         self.estado = ttk.Combobox(mainFrame, state='readonly',values=self.listaEstados)
         self.estado.place(x=10, y=310)
 
         #Responsible
         Label(mainFrame, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=340)
-        self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = empleados.ver('nombre'))
+        self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = employers.ver('nombre'))
         self.responsible.place(x=10, y=370)
 
         #Repeat
@@ -1494,7 +1493,7 @@ class Mantenimientos(Crm):
         clearMainFrame()
         
         #Var
-        self.newMaintenance = mantenimientos.Maintenance(type = mantenimientos.Corrective)
+        self.newMaintenance = maintenances.Maintenance(type = maintenances.Corrective)
         self.searchString = StringVar(mainFrame)
         descriptionString = StringVar(mainFrame)
         self.quantity = StringVar(mainFrame)
@@ -1512,7 +1511,7 @@ class Mantenimientos(Crm):
 
         #Responsible
         Label(mainFrame, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=300, y=40)
-        self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = empleados.ver('nombre'))
+        self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = employers.ver('nombre'))
         self.responsible.place(x=300, y=70  )
 
         #Description
@@ -1633,7 +1632,7 @@ class Mantenimientos(Crm):
 
     def selectPlant(self):
         plantId = self.tabla.focus()
-        plantData = equipos.buscar(plantId)
+        plantData = plants.buscar(plantId)
         if not plantData in self.selectedPlants:
             self.selectedPlants.append(plantData)
             print(f"Plant with id {plantId} added to the maintenance")
@@ -1647,7 +1646,7 @@ class Mantenimientos(Crm):
 
     def deselectPlant(self):
         plantId = self.selectedPlantsTable.focus()
-        plantData = equipos.buscar(plantId)
+        plantData = plants.buscar(plantId)
         if plantData in self.selectedPlants:
             self.selectedPlants.pop(self.selectedPlants.index(plantData))
             print(f"Plant with id {plantId} removed to the maintenance")
@@ -1659,8 +1658,8 @@ class Mantenimientos(Crm):
             self.selectedPlantsTable.insert('', 0, id = x[0], values = x[2], text = x[1],tags=("mytag",))
 
     def saveCorrective(self):
-        self.newMaintenance.date = self.cal.selection_get()
-        self.newMaintenance.responsible = empleados.ver('id')[self.responsible.current()]
+        self.newMaintenance.date = datetime.combine(self.cal.selection_get(), datetime.min.time())
+        self.newMaintenance.responsible = employers.ver('id')[self.responsible.current()]
         self.newMaintenance.description = self.description.get('1.0', END)
         self.newMaintenance.plants = self.selectedPlants
         
@@ -1672,7 +1671,7 @@ class Mantenimientos(Crm):
 
     def asignarActividad(self):
         #Get activity
-        newActivity = actividades.Activity(id = self.tablaActividadesAsignadas.focus(), assigned= True)
+        newActivity = activities.Activity(id = self.tablaActividadesAsignadas.focus(), assigned= True)
         if newActivity not in self.newMaintenance.activities:
             self.newMaintenance.activities.append(newActivity)
             self.newMaintenance.activities.sort(key=getPlant)
@@ -1711,9 +1710,9 @@ class Mantenimientos(Crm):
     def nuevoGuardar(self):
         self.newMaintenance.date = self.cal.selection_get()
         self.newMaintenance.status = self.estado.get()
-        self.newMaintenance.responsible = empleados.ver()[self.responsible.current()][0]
+        self.newMaintenance.responsible = employers.ver()[self.responsible.current()][0]
         self.newMaintenance.description = self.description.get('1.0',END)
-        self.newMaintenance.type = mantenimientos.Preventive
+        self.newMaintenance.type = maintenances.Preventive
         if (self.varRepeat.get()):
             self.newMaintenance.repeat = self.repeat.get()
         else:
@@ -1727,24 +1726,24 @@ class Mantenimientos(Crm):
 
     def programar(self, id=0):
         if id == 0:
-            self.noProgramados = mantenimientos.buscarNoProgramados()
+            self.noProgramados = maintenances.buscarNoProgramados()
             print(f"Starting to schedule maintenances...")
             for i in self.noProgramados:
                 fecha = i[1].split('/')
                 fecha = date(int(fecha[2]), int(fecha[1]), int(fecha[0]))
                 #Duplicar el mantenimiento
-                mantenimientos.nuevo(fecha+timedelta(days=int(i[6])), 'Programado', i[3], i[4], i[5], i[6])
-                print(f"    The maintenance was registered with id: {mantenimientos.ultimoMantenimiento()}")
+                maintenances.nuevo(fecha+timedelta(days=int(i[6])), 'Programado', i[3], i[4], i[5], i[6])
+                print(f"    The maintenance was registered with id: {maintenances.ultimoMantenimiento()}")
                 #Duplicar actividades
-                for j in mantenimientos.buscarActividades(i[0]):
-                    mantenimientos.agregarActividad(mantenimientos.ultimoMantenimiento(), j[2])
+                for j in maintenances.buscarActividades(i[0]):
+                    maintenances.agregarActividad(maintenances.ultimoMantenimiento(), j[2])
                     print(f"        Activity added to maintenance")
-                mantenimientos.editar(i[0], fecha, 'Realizado Programado', i[3], i[4], i[5], i[6])
+                maintenances.editar(i[0], fecha, 'Realizado Programado', i[3], i[4], i[5], i[6])
             print(f"{len(self.noProgramados)} maintenances registered succesfully")
             texto = f"Se han programado {len(self.noProgramados)} mantenimientos con éxito."
             messagebox.showinfo(title='Mantenimientos programados', message=texto)    
         else:
-            mant = mantenimientos.Maintenance(id = id)
+            mant = maintenances.Maintenance(id = id)
             nextMaintenance = mant.scheduleNext()
             if nextMaintenance == 1:
                 messagebox.showwarning(title='Error', message='El mantenimiento no se puede programar. Consulte la ayuda para más información.')
@@ -1756,8 +1755,8 @@ class Mantenimientos(Crm):
         if id == '':
             messagebox.showwarning(title='No hay nada seleccionado', message='Seleccione un mantenimiento.')
         else:
-            select = mantenimientos.Maintenance(id = id)
-            select.status = mantenimientos.Done
+            select = maintenances.Maintenance(id = id)
+            select.status = maintenances.Done
             select.date = datetime.now()
             select.save()
             messagebox.showinfo(title='Editado con éxito', message='El mantenimiento ha sido modificado correctamente.')
@@ -1785,7 +1784,7 @@ class Mantenimientos(Crm):
         height=root.winfo_height()-50)
         mainFrame.grid(column=0, row=1)
 
-        sel = mantenimientos.Maintenance(id = id)
+        sel = maintenances.Maintenance(id = id)
 
         Label(mainFrame, 
             text='Mantenimiento ID '+str(sel.id),
@@ -1805,7 +1804,7 @@ class Mantenimientos(Crm):
             text = ' el '
         Label(self.info, text=sel.status+text+sel.date.strftime('%d/%m/%Y'),fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=0)
         #Label responsable
-        Label(self.info, text='Asignado a '+empleados.buscar(sel.responsible)[2],fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=30)
+        Label(self.info, text='Asignado a '+employers.buscar(sel.responsible)[2],fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=30)
         #Label Tipo de mantenimiento
         Label(self.info, text='Mantenimiento '+sel.type,fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=60)
         if sel.type == 'Preventivo':
@@ -1816,16 +1815,19 @@ class Mantenimientos(Crm):
         if sel.status == 'Programado':
             Button(self.info, text='Realizar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.realizarMantenimiento(id)).place(x=0, y=root.winfo_height()-150)
         #Boton Programar
-        if sel.status == mantenimientos.Done and sel.next == None and sel.type == 'Preventivo':
+        if sel.status == maintenances.Done and sel.next == None and sel.type == 'Preventivo':
             Button(self.info, text='Programar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.programar(id)).place(x=0, y=root.winfo_height()-150)
         #Boton cancelar
-        if sel.status != mantenimientos.Cancelled:
+        if sel.status != maintenances.Cancelled:
             Button(self.info, text='Cancelar', font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.cancelarMantenimiento(sel)).place(x=70, y=root.winfo_height()-150)
         #Delete Button
-        if sel.status == mantenimientos.Cancelled:
+        if sel.status == maintenances.Cancelled:
             Button(self.info, text='Eliminar', font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.eliminarMantenimiento(sel)).place(x=0, y=root.winfo_height()-150)
+            
+        #Delete Button
+        Button(self.info, text='Orden de trabajo', font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.maintenanceToWorkOrder(sel)).place(x=140, y=root.winfo_height()-150)
 
-        if sel.type == mantenimientos.Preventive:
+        if sel.type == maintenances.Preventive:
             listActivities = []            
             for activity in sel.activities:
                 if len(listActivities) == 0:
@@ -1847,7 +1849,7 @@ class Mantenimientos(Crm):
                     width=250,
                     height=root.winfo_height()-50)
                 framePlant.place(x=root.winfo_width()*0.2+listActivities.index(plant)*250, y=0)
-                thisPlant = equipos.buscar(plant[0].plant.id)
+                thisPlant = plants.buscar(plant[0].plant.id)
                 area = areas.Area(thisPlant[3])
                 #Department
                 Label(framePlant, text=area.department.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
@@ -1874,6 +1876,21 @@ class Mantenimientos(Crm):
                 Label(framePlant, text=plant.area.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(plant.department.name*10), y=10)
                 Label(framePlant, text=plant.name, fg='#000000', bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=10, y=40)
                 Label(framePlant, text=plant.description, fg='#000000', bg="#f2f2f2", font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
+                
+    def maintenanceToWorkOrder(self, maintenance):
+        """_summary_
+
+        Args:
+            maintenance (_type_): _description_
+        """
+        workorder = workorders.WorkOrder()
+        workorder.date = datetime.now()
+        workorder.responsible = employers.Employer(id = maintenance.responsible)
+        workorder.comment = maintenance.description
+        workorder.maintenances.append(maintenance)
+        workorder.save()
+        f = asksaveasfile(initialfile=f"Orden de trabajo {workorder.id}.pdf", defaultextension='.pdf', filetypes=[('Portable Document File', '*.pdf'),])
+        workorder.generatePDF(f.name)
 
 def createFunctionToDisplayEmployer(id, object):
     return lambda: object.parent.objetoEmpleados.displayEmployer(id)
@@ -1883,7 +1900,7 @@ class Empleados():
     def __init__(self, parent):
         global root
         global mainFrame   
-        self.parent = parent
+        self.parent = parent    
         self.padre = parent
     
     def main(self):
@@ -1892,7 +1909,7 @@ class Empleados():
         #Title
         Label(mainFrame, text='Empleados', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
         
-        employerList = empleados.getAll() 
+        employerList = employers.getAll() 
         
         employerFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-40, height=root.winfo_height()-130, x=10, y=60)
         employerFrame.place(x=10, y=40)
@@ -1912,13 +1929,13 @@ class Empleados():
             Label(actualFrame, text=employer.key, fg='#444444', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='left').place(x=20, y=40)
             
             #Pending maintenances
-            pendingMaintenances = len(mantenimientos.findPendingMaintenances(employerId= employer.id))
+            pendingMaintenances = len(maintenances.findPendingMaintenances(employerId= employer.id))
             textColor= colorBlue
             Label(actualFrame, text=pendingMaintenances, fg=textColor, bg=colorGray, font=("Segoe UI", "16", "normal"), wraplength=300, justify='center').place(x=65, y=90, anchor=CENTER)
             Label(actualFrame, text='Mantenimientos\nprogramados', fg='#666666', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='center').place(x=65, y=120, anchor=CENTER)
             
             #Overdue maintenances
-            overdueMaintenances = len(mantenimientos.findOverdueMaintenances(employerId= employer.id))
+            overdueMaintenances = len(maintenances.findOverdueMaintenances(employerId= employer.id))
             if overdueMaintenances == 0: textColor = colorGreen
             elif overdueMaintenances < 3: textColor = colorBlue
             else: textColor = colorRed
@@ -1934,7 +1951,7 @@ class Empleados():
         #Title
         Label(mainFrame, text='Empleados', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
         
-        employer = empleados.Employer(id = id)
+        employer = employers.Employer(id = id)
         
         #Button back
         Button(mainFrame, text=' ← Regresar ',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.main).place(x=10, y=40)
@@ -1967,12 +1984,12 @@ class Empleados():
         maintenancesFrame = ScrollableFrame(mainFrame, x=(root.winfo_width()/2)+10, y=180, width=(root.winfo_width()/2)-40, height=root.winfo_height()-280)
         maintenancesFrame.place(x=(root.winfo_width()/2)+10, y=180)
         
-        maintenancesList = mantenimientos.find(employerId=employer.id, status=mantenimientos.Programmed)
+        maintenancesList = maintenances.find(employerId=employer.id, status=maintenances.Programmed)
         for maintenance in maintenancesList:
             mant = Frame(maintenancesFrame.scrollableFrame)
             mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
             mant.pack(pady=10, padx=15)
-            if maintenance.date < datetime.date(datetime.now()):
+            if maintenance.date < datetime.now():
                 actualColor = colorRed
             else:
                 actualColor = colorGreen
@@ -1980,7 +1997,7 @@ class Empleados():
             #Titular
             Label(mant, text='Mantenimiento ID '+str(maintenance.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
             #Date
-            Label(mant, text=maintenance.date.strftime("%a %d %B %Y"), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
+            Label(mant, text=maintenance.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
             #Status
             if maintenance.status == 'Realizado' or maintenance.status == 'Realizado Programado':
                 color = colorGreen
@@ -2170,6 +2187,9 @@ class Inventory():
         Label(mainFrame, text='Requisiciones', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
         requisitionsList = inventory.getRequisitions(quantity=10, order='date')
         
+        #New
+        Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newRequisition).place(x=root.winfo_width()-100, y=20)
+        
         requisitionsFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
         requisitionsFrame.place(x=0, y=0)
         
@@ -2218,6 +2238,9 @@ class Inventory():
         #Make delivered
         if req.status == inventory.STATUS_CONFIRMED:    
             Button(mainFrame, text='Marcar entregada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.purchaseDelivered(req)).place(x=1050, y=35)    
+        
+        #Delete button
+        Button(mainFrame, text='Eliminar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.deleteRequisition(req)).place(x=1200, y=35)
             
         #Products
         Label(mainFrame, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
@@ -2242,6 +2265,12 @@ class Inventory():
     def changeStatus(self, requisition, status):
         requisition.changeStatus(status)
         self.displayRequisition(requisition.id)
+        
+    def deleteRequisition(self, requisition):
+        if messagebox.askyesno(title='¿Eliminar la requisición?', message=f"¿Desea eliminar la requisición con ID {requisition.id}?"):
+            requisition.delete()
+            messagebox.showinfo(title='Requisición eliminada', message=f"La requisición ha sido eliminada correctamente")
+        self.requisitionsMainWindow()
         
     def saveRequisitionPDF(self, requisition):
         f = asksaveasfile(initialfile=f"Requisicion {requisition.id}.pdf", defaultextension='.pdf', filetypes=[('Portable Document File', '*.pdf'),])
@@ -2403,16 +2432,16 @@ class Inventory():
         self.requisition.status = inventory.STATUS_DRAFT
         
         #Tittle
-        Label(mainframe, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=334, y=26)
-        Label(mainframe, text='Nueva', bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=334, y=50)
+        Label(mainframe, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=26)
+        Label(mainframe, text='Nueva', bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
         
         #Save
-        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveRequisition).place(x=934, y=35)
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveRequisition).place(x=root.winfo_width()-100, y=35)
         
         #Search
         search = Frame(mainframe)
-        search.config(bg='#ECECEC', width=700, height=30)
-        search.place(x=334 , y=100)
+        search.config(bg='#ECECEC', width=(root.winfo_width()/2)-40, height=30)
+        search.place(x=20 , y=100)
         global searchImg 
         searchImg= PhotoImage(file='img/search.png')
         Label(search, image = searchImg, bd=0, width=12, heigh=12).place(x=12, y=9)
@@ -2421,26 +2450,32 @@ class Inventory():
         searchEntry.bind('<Key>', self.updateInventorySearch)
         
         #Products table
-        self.productsTable = crearTabla(['Nombre', 'Descripción', 'Marca', 'Modelo'], [1,], [175,175,175,175], [['','','',''],], mainframe, 4, '' )
-        self.productsTable.place(x=334, y=140)
+        tableWidth = int(((root.winfo_width()/2)-40)/4)
+        self.productsTable = crearTabla(['Nombre', 'Descripción', 'Marca', 'Modelo'], [1,], [tableWidth,tableWidth,tableWidth,tableWidth], [['','','',''],], mainframe, 4, '' )
+        self.productsTable.place(x=20, y=140)
         
         #Coment
-        Label(mainframe, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=334, y=270)
-        self.comment = Text(mainframe, width=100, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=3)
-        self.comment.place(x=334, y=296)
+        Label(mainframe, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=20, y=270)
+        self.comment = Text(mainframe, width=int(((root.winfo_width()/2)-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=3)
+        self.comment.place(x=20, y=296)
         
         #Quantity
-        Label(mainframe, text='Cantidad',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=334, y=370)
-        Entry(mainframe, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=334, y=392)
+        Label(mainframe, text='Cantidad',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=20, y=370)
+        Entry(mainframe, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=392)
         
         #Add product
-        Button(mainframe, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToRequisition).place(x=572, y=392)
+        Button(mainframe, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToRequisition).place(x=300, y=392)
         
         #Products
-        Label(mainframe, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=334, y=437)
+        Label(mainframe, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=root.winfo_width()/2, y=100)
         
-        self.productsFrame = ScrollableFrame(mainframe, width=700, height=200, x=334, y=466)
-        self.productsFrame.place(x=334, y=466)
+        self.productsFrame = ScrollableFrame(mainframe, width=int(root.winfo_width()/2-40), height=300, x=root.winfo_width()/2, y=130)
+        self.productsFrame.place(x=root.winfo_width()/2, y=130)
+        
+        #Requisition Comment
+        Label(mainframe, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=20, y=450)
+        self.requisitionComment = Text(mainframe, width=int(((root.winfo_width())-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=6)
+        self.requisitionComment.place(x=20, y=480)
         
     def updateInventorySearch(self, event):
         productsList = inventory.findByName(self.searchString.get())
@@ -2464,7 +2499,7 @@ class Inventory():
             productFrame.config(bg=colorGray, highlightthickness=0, width=680, height=70)
             productFrame.pack(pady=5, padx=5)
             #Plant
-            name = Label(productFrame, text=product.product.name, fg='#000000', bg=colForGray, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
+            name = Label(productFrame, text=product.product.name, fg='#000000', bg=colorGray, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
             name.place(x=10, y=10)
             name.update()
             Label(productFrame, text='Cantidad: '+product.quantity, fg=colorBlue, bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=10)
@@ -2473,11 +2508,14 @@ class Inventory():
             #Button(productFrame, text=' X ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=1, relief=FLAT, command=self.addProductToRequisition).place(x=productFrame.winfo_width()-35, y=10)
     
     def saveRequisition(self):
+        self.requisition.description = self.requisitionComment.get('1.0', END)
         self.requisition.save()
         messagebox.showinfo(title='Requisición guardada', message=f"La requisición ha sido guardada con el ID {self.requisition.id}")
         self.window.destroy()
+        self.displayRequisition(self.requisition.id)
             
         
 if __name__ == '__main__':
+    sql.checkDatabase()
     aplicacion = Crm()
     root.mainloop()

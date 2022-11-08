@@ -1,5 +1,11 @@
-from modules import sql
-import empleados
+try:
+    import sql
+except:
+    from modules import sql
+try:
+    import employers
+except:
+    from modules import employers
 
 #Classes
 class Area():
@@ -11,7 +17,7 @@ class Area():
             return
         self.name = ''
         self.description = ''
-        self.responsible = empleados.Employer()
+        self.responsible = employers.Employer()
         self.department = Department()
         
     def __repr__(self) -> str:
@@ -22,7 +28,7 @@ class Area():
         rawData = buscar(id)
         self.name = rawData[1]
         self.description = rawData[2]
-        self.responsible = empleados.Employer(id = rawData[3])
+        self.responsible = employers.Employer(id = rawData[3])
         self.department = Department(id = rawData[4])
         
 class Department():
