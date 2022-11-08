@@ -67,7 +67,7 @@ def deleteActivityFromList(activity, objeto):
     return lambda:objeto.padre.objetoMantenimientos.eliminarActividadAsignada(activity)
 
 def getPlant(activity):
-    return activity.plant.department
+    return activity.plant.department.name
 
 def clearMainFrame():
     global mainFrame
@@ -107,6 +107,7 @@ class Crm:
         self.objetoMantenimientos = Mantenimientos(self)
         self.objetoEmpleados = Empleados(self)
         self.inventory = Inventory(self)
+        self.workorders = WorkOrders(self)
 
         #Menu---------------------
         root.update()
@@ -156,18 +157,18 @@ class Crm:
             command=self.inventory.inventoryMainWindow
             ).place(x=2.25*root.winfo_width()/6, y=4)
 
-        # Button(menuFrame, 
-        #     text='Departamentos',
-        #     font=("Segoe UI", "11", "normal"),
-        #     bg=colorButton,
-        #     fg="#ffffff",
-        #     bd=0,
-        #     highlightthickness=0,
-        #     width=12,
-        #     borderwidth=5,
-        #     relief=FLAT,
-        #     command=self.departamentos
-        #     ).place(x=3.25*root.winfo_width()/6, y=4)
+        Button(menuFrame, 
+            text='Ordenes de trabajo',
+            font=("Segoe UI", "11", "normal"),
+            bg=colorButton,
+            fg="#ffffff",
+            bd=0,
+            highlightthickness=0,
+            width=18,
+            borderwidth=5,
+            relief=FLAT,
+            command=self.workorders.mainWindow
+            ).place(x=3.25*root.winfo_width()/6, y=4)
 
         Button(menuFrame, 
             text='Requisiciones',
@@ -1537,6 +1538,12 @@ class Mantenimientos(Crm):
         self.area = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresAreas)
         self.area.bind("<<ComboboxSelected>>", self.ActualizarEquipos)
         self.area.place(x=600, y=70)
+        
+        #Status
+        self.statusList=[maintenances.Done, maintenances.Programmed]
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=750, y=40)
+        self.status = ttk.Combobox(mainFrame, state='readonly',values=self.statusList)
+        self.status.place(x=750, y=70)
 
         #Plants table
         Label(mainFrame, text='Equipos', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=280)
@@ -1660,6 +1667,7 @@ class Mantenimientos(Crm):
     def saveCorrective(self):
         self.newMaintenance.date = datetime.combine(self.cal.selection_get(), datetime.min.time())
         self.newMaintenance.responsible = employers.ver('id')[self.responsible.current()]
+        self.newMaintenance.status = self.statusList[self.status.current()]
         self.newMaintenance.description = self.description.get('1.0', END)
         self.newMaintenance.plants = self.selectedPlants
         
@@ -1682,7 +1690,7 @@ class Mantenimientos(Crm):
             actualFrame.config(bg=colorGray, highlightthickness=0, width=290, height=100)
             actualFrame.pack(pady=5, padx=5)
             #Plant
-            Label(actualFrame, text=activity.plant.department + ' > ' + activity.plant.area + ' > '+ activity.plant.name, fg='#444444', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='left').place(x=10, y=10)
+            Label(actualFrame, text=activity.plant.department.name + ' > ' + activity.plant.area.name + ' > '+ activity.plant.name, fg='#444444', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='left').place(x=10, y=10)
             #Name
             Label(actualFrame, text=activity.name, fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=30)
             #Description
@@ -1708,7 +1716,7 @@ class Mantenimientos(Crm):
             Button(actualFrame, text=' - ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=deleteActivityFromList(self.newMaintenance.activities.index(activity), self)).place(x=260, y=10)
 
     def nuevoGuardar(self):
-        self.newMaintenance.date = self.cal.selection_get()
+        self.newMaintenance.date = datetime.combine(self.cal.selection_get(), datetime.min.time())
         self.newMaintenance.status = self.estado.get()
         self.newMaintenance.responsible = employers.ver()[self.responsible.current()][0]
         self.newMaintenance.description = self.description.get('1.0',END)
@@ -1884,7 +1892,7 @@ class Mantenimientos(Crm):
             maintenance (_type_): _description_
         """
         workorder = workorders.WorkOrder()
-        workorder.date = datetime.now()
+        workorder.date = maintenance.date
         workorder.responsible = employers.Employer(id = maintenance.responsible)
         workorder.comment = maintenance.description
         workorder.maintenances.append(maintenance)
@@ -2513,6 +2521,153 @@ class Inventory():
         messagebox.showinfo(title='Requisición guardada', message=f"La requisición ha sido guardada con el ID {self.requisition.id}")
         self.window.destroy()
         self.displayRequisition(self.requisition.id)
+ 
+def func_displayWorkOrder(id, object):
+    return lambda event: object.parent.workorders.displayWorkOrder(id) 
+        
+class WorkOrders:
+    
+    def __init__(self, crm) -> None:
+        global root
+        self.parent = crm
+    
+    def mainWindow(self):
+        global mainFrame
+        clearMainFrame()
+        
+        Label(mainFrame, text='Ordenes de trabajo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        workOrdersList = workorders.getAll()
+        
+        #New
+        Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newWorkOrder).place(x=root.winfo_width()-100, y=20)
+        
+        workordersFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
+        workordersFrame.place(x=0, y=0)
+        
+        Label(mainFrame, text='Id', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=20, y=40)
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=90, y=40)
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=270, y=40)
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=370, y=40)
+        
+        for work in workOrdersList:
+            reqNumber = workOrdersList.index(work)
+            backColor = colorGray if reqNumber%2==0 else colorWhite
+            frame = Frame(workordersFrame.scrollableFrame)
+            frame.config(width=root.winfo_width()-80, height=30, bg=backColor)
+            frame.bind('<Button-1>', func_displayWorkOrder(work.id, self))
+            frame.pack(pady=1)
+            Label(frame, text=work.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
+            Label(frame, text=datetime.date(work.date).strftime("%d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
+            Label(frame, text=workorders.LANGUAGE[work.status].capitalize(), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=260, y=4)
+            Label(frame, text=work.comment, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=360, y=4)
+    
+    def displayWorkOrder(self, id):
+        global mainFrame
+        clearMainFrame()
+        workorder = workorders.WorkOrder(id = id)
+        
+        #Tittle
+        Label(mainFrame, text='Orden de trabajo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        Label(mainFrame, text='ID '+str(workorder.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
+        Label(mainFrame, text=workorders.LANGUAGE[workorder.status].capitalize(), bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
+        Label(mainFrame, text=datetime.date(workorder.date).strftime("%d / %b /  %Y"), bg="#ffffff", font=("Segoe UI", "14", "normal")).place(x=20, y=120)
+        Label(mainFrame, text='Asignada a '+workorder.responsible.name, bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=200, y=120)
+        
+        #Save
+        Button(mainFrame, text='Guardar en PDF',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveWorkOrderPDF(workorder)).place(x=934, y=35)
+        
+        #Description
+        Label(mainFrame, text=workorder.comment, bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=20, y=160)
+        
+        #Make confirmed
+        if workorder.status == workorders.STATUS_DRAFT:    
+            Button(mainFrame, text='Confirmar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(workorder, workorders.STATUS_CONFIRMED)).place(x=1050, y=35)
+            
+        #Make in progress
+        if workorder.status == workorders.STATUS_CONFIRMED:    
+            Button(mainFrame, text='Comenzar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(workorder, workorders.STATUS_IN_PROGRESS)).place(x=1050, y=35)
+            
+        #Make delivered
+        if workorder.status == workorders.STATUS_IN_PROGRESS:    
+            Button(mainFrame, text='Terminar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(workorder, workorders.STATUS_DONE)).place(x=1050, y=35)    
+        
+        #Delete button
+        Button(mainFrame, text='Eliminar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.deleteWorkOrder(workorder)).place(x=1200, y=35)
+        
+        #Activities
+        Label(mainFrame, text='Actividades',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
+        
+        self.activitiesFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-60, height=root.winfo_height()-300, x=20, y=230)
+        self.activitiesFrame.place(x=20, y=230)
+        
+        for maintenance in workorder.maintenances:
+            backColor = colorGray
+            maintFrame = Frame(self.activitiesFrame.scrollableFrame)
+            maintFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80)
+            
+            titleFrame = Frame(maintFrame)
+            titleFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=75)
+            #Plant
+            name = Label(titleFrame, text='Mantenimiento no. '+str(maintenance.id), fg='#000000', bg=backColor, font=("Segoe UI", "11", "bold"), wraplength=300, justify='left')
+            name.place(x=10, y=10)
+            name.update()
+            Label(titleFrame, text='Mantenimiento '+str(maintenance.type), fg=colorBlue, bg=backColor, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=11)
+            Label(titleFrame, text=maintenance.description, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=1000, justify='left').place(x=10, y=35)
+            titleFrame.pack(pady=1)
+            detailFrame = Frame(maintFrame)
+            detailFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-100)
+            if maintenance.type == maintenances.Corrective:
+                for plant in maintenance.plants:
+                    plantFrame = Frame(detailFrame)
+                    plantFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-80, height=70)
+                    Label(plantFrame, text=plant.department.name + ' - '+ plant.area.name +' - '+ plant.name, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=10, y=10)
+                    plantFrame.pack(pady=1)
+                    Label(plantFrame, text=plant.description, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=10, y=30)
+                    plantFrame.pack(pady=1)
+            else:
+                for plant in maintenance.plants:
+                    plantFrame = Frame(detailFrame)
+                    plantFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-80, height=60)
+                    Label(plantFrame, text=plant.department.name + ' - '+ plant.area.name +' - '+ plant.name, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=10, y=0)
+                    Label(plantFrame, text=plant.description, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=10, y=20)
+                    plantFrame.pack(pady=1)
+                    actFrame = Frame(detailFrame)
+                    actFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-80)
+                    for activity in plant.activities:
+                        activityFrame = Frame(actFrame)
+                        activityFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-80, height=60)
+                        Label(activityFrame, text=activity.name, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=40, y=0)
+                        Label(activityFrame, text=activity.description, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=40, y=20)
+                        activityFrame.pack(pady=1)
+                    actFrame.pack(pady=1)
+            detailFrame.pack(pady=1)
+            maintFrame.pack(pady=1)
+    
+    def saveWorkOrderPDF(self, workorder):
+        f = asksaveasfile(initialfile=f"Orden de trabajo {workorder.id}.pdf", defaultextension='.pdf', filetypes=[('Portable Document File', '*.pdf'),])
+        workorder.generatePDF(f.name)
+    
+    def changeStatus(self, workorder, status):
+        workorder.status = status
+        workorder.save()
+        if status == workorders.STATUS_DONE:
+            for maint in workorder.maintenances:
+                maint.status = maintenances.Done
+                maint.date = datetime.now()
+                maint.save()
+                if maint.type == maintenances.Preventive:
+                    if messagebox.askyesno(title='¿Programas siguiente mantenimiento?', message=f"¿Desea programar el siguiente mantenimiento preventivo con ID {maint.id}?"):
+                        maint.scheduleNext()
+        self.displayWorkOrder(workorder.id)
+        
+    def deleteWorkOrder(self, workorder):
+        if messagebox.askyesno(title='¿Eliminar la orden de trabajo?', message=f"¿Desea eliminar la orden de trabajo con ID {workorder.id}?"):
+            workorder.delete()
+            messagebox.showinfo(title='Orden de trabajo eliminada', message=f"La orden de trabajo ha sido eliminada correctamente")
+        self.mainWindow()
+    
+    def newWorkOrder(self):
+        pass
             
         
 if __name__ == '__main__':

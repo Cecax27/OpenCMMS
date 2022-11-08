@@ -3,9 +3,9 @@ try:
 except:
     from modules import sql
 try:
-    import inventory
-except:
     from modules import inventory
+except:
+    import inventory
 try:
     import plants
 except:
@@ -364,12 +364,7 @@ def ultimoMantenimiento():
 
 def ultimoMantenimientoRealizado(id):
     """Busca el último mantenimiento registrado de un equipo"""
-    maintenances = buscarPorEquipo(id)
-    for main in maintenances:
-        if main.status != Done:
-            maintenances.pop(maintenances.index(main))
-    maintenances.sort(key= lambda plant: plant.date, reverse= True)
-    return maintenances[0] if len(maintenances) > 0 else None
+    return Maintenance(id = sql.petition(f"SELECT mantenimientos.id, MAX(mantenimientos.fecha) FROM mantenimientos LEFT JOIN mantenimientos_actividadesAsignadas ON mantenimientos.id = mantenimientos_actividadesAsignadas.mantenimientoId LEFT JOIN actividadesAsignadas ON mantenimientos_actividadesAsignadas.actividadesId = actividadesAsignadas.id WHERE actividadesAsignadas.idEquipo = {id} AND mantenimientos.estado = '{Done}'")[0][0])
 
 def ultimoMantenimientoProgramado(id):
     """Busca el último mantenimiento registrado de un equipo"""
@@ -401,7 +396,7 @@ def buscarAtrasados(fecha):
 def buscarPorEquipo(id):
     """Busca los matenimientos correspondientes a un equipo por su id"""
     mantList = []
-    for mant in sql.peticion(f"SELECT mantenimientos_actividadesAsignadas.mantenimientoId FROM mantenimientos_actividadesAsignadas LEFT JOIN actividadesAsignadas ON mantenimientos_actividadesAsignadas.actividadesId = actividadesAsignadas.id WHERE actividadesAsignadas.idEquipo = {id}"):
+    for mant in sql.peticion(f"SELECT DISTINCT mantenimientos_actividadesAsignadas.mantenimientoId FROM mantenimientos_actividadesAsignadas LEFT JOIN actividadesAsignadas ON mantenimientos_actividadesAsignadas.actividadesId = actividadesAsignadas.id WHERE actividadesAsignadas.idEquipo = {id}"):
         mantList.append(Maintenance(id = mant[0]))
     mantList.sort(key= lambda plant: plant.date, reverse= True)
     return mantList
@@ -431,7 +426,7 @@ def find(overdue = False, employerId = 0, status = None):
     
 
 if __name__ == '__main__':
-    print(ultimoMantenimientoProgramado(2))
+    print(ultimoMantenimientoRealizado(11))
     #for maint in getAll():)
         #print(maint.id)
         #print(maint.date)

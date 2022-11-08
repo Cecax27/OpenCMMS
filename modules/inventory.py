@@ -6,9 +6,9 @@ from datetime import date
 from datetime import datetime
 from datetime import timedelta
 try:
-    import pdf
-except:
     from modules import pdf
+except:
+    import pdf
 
 #Const-----
 INPUT = "input"

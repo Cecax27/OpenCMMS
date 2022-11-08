@@ -4,9 +4,9 @@ try:
 except:
     from modules import inventory
 try:
-    import workorders
-except:
     from modules import workorders
+except:
+    import workorders
 try:
     import maintenances
 except:

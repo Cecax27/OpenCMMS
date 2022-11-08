@@ -10,9 +10,9 @@ try:
 except:
     from modules import employers
 try:
-    import maintenances
-except:
     from modules import maintenances
+except:
+    import maintenances
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
@@ -26,6 +26,18 @@ STATUS_DRAFT = 'draft'
 STATUS_CONFIRMED = 'confirmed'
 STATUS_IN_PROGRESS = 'in progress'
 STATUS_DONE = 'done'
+
+#Dictionarys
+ESP = {STATUS_DRAFT:'borrador',
+       STATUS_CONFIRMED: 'confirmada',
+       STATUS_IN_PROGRESS: 'en progreso',
+       STATUS_DONE: 'realizada'}
+ESP_ENG = {'borrador':STATUS_DRAFT,
+       'confirmada':STATUS_CONFIRMED,
+       'en progreso':STATUS_IN_PROGRESS,
+       'realizada':STATUS_DONE}
+
+LANGUAGE = ESP
 
 
 #Classes------
@@ -46,6 +58,9 @@ class WorkOrder():
         self.responsible = None
         self.comment = None
         self.maintenances = []
+        
+    def __repr__(self) -> str:
+        return f"Work Order with Id {self.id}:\n\tDescription: {self.comment}\n"
         
     def findById(self, id):
         """Find in the database.
@@ -96,6 +111,12 @@ class WorkOrder():
     def generatePDF(self, filename):
         pdf.createWorkOrder(self, filename)
     
+def getAll(order = 'id'):
+    list = []
+    for id in sql.petition(f"SELECT id FROM workorders ORDER BY {order}"):
+        list.append(WorkOrder(id = id[0]))
+    return list
+    
 if __name__ == '__main__':
     # work = WorkOrder()
     # work.date = datetime.now()
@@ -103,7 +124,8 @@ if __name__ == '__main__':
     # work.comment = 'Primera prueba.'
     # work.maintenances.append(maintenances.Maintenance(id = 143))
     # work.save()
-    work = WorkOrder(id = 1)
+    # work = WorkOrder(id = 1)
     #work.maintenances.append(maintenances.Maintenance(id = 109))
     #work.save()
-    work.generatePDF('prueba.pdf')
+    #work.generatePDF('prueba.pdf')
+    print(getAll())
