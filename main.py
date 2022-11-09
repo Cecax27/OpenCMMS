@@ -1,6 +1,7 @@
 from cgitb import text
 from math import prod
 from msilib.schema import ComboBox
+import textwrap
 from tkinter import *
 from tkinter.filedialog import asksaveasfile
 import tkinter.ttk as ttk
@@ -603,7 +604,7 @@ class Areas():
     def guardar(self):
         codigoDepartamento = self.listaDepartamentos[self.listaNombresDepartamentos.index(self.departamento.get())][0]
         #print(self.dictEmpleado[self.responsable.get()])
-        codigo = employers.buscar(self.dictEmpleado[self.responsable.get()])[1]
+        codigo = self.dictEmpleado[self.responsable.get()]
         idDepartamento = self.listaDepartamentos[0]
         areas.new(self.nombre.get(),  self.descripcion.get(), codigo, codigoDepartamento)
         texto = 'El área ' + self.nombre.get() + ' ha sido registrada.'
@@ -1373,9 +1374,6 @@ class Mantenimientos(Crm):
         Label(mainFrame, text='Mantenimientos', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
         maintenancesList = maintenances.getAll()
         
-        #New
-        #Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newWorkOrder).place(x=root.winfo_width()-100, y=20)
-        
         maintenancesFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
         maintenancesFrame.place(x=0, y=0)
         
@@ -1397,12 +1395,10 @@ class Mantenimientos(Crm):
             Label(frame, text=maint.description, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=360, y=4)
     
     def ActualizarAreas(self, event):
-        #print(self.departamento2.current())
         self.listaAreas = areas.buscarPorDepartamento( self.listaDepartamentos[self.departamento.current()][0])
         self.listaNombresAreas=[]
         for x in self.listaAreas:
             self.listaNombresAreas.append(x[1])
-        #print(self.listaNombresAreas)
         self.area["values"]=self.listaNombresAreas
 
     def ActualizarEquipos(self, *event):
@@ -1410,7 +1406,6 @@ class Mantenimientos(Crm):
         if len(self.listaEquipos) == 0:
             self.listaEquipos = [[' ','Area sin equipos']]
         self.tabla.delete(*self.tabla.get_children())
-        #print(self.listaAreas[self.area.current()][0])
         
         for x in self.listaEquipos:
             self.tabla.insert('', 0,id=x[0], text = x[1], values =x[2], tags=("mytag","color"))
@@ -1645,6 +1640,251 @@ class Mantenimientos(Crm):
         self.productsFrame = ScrollableFrame(mainFrame, width=380, height=200, x=950, y=260)
         self.productsFrame.place(x=950, y=260)
         
+    def editPreventiveWindow(self, maintenance):
+        """Open a window to edit a preventive maintenance.
+
+        Args:
+            maintenance (Maintenance): _description_
+        """ 
+        global mainFrame
+        clearMainFrame()
+        
+        self.varRepeat = IntVar()
+        self.newMaintenance = maintenance
+        self.varRepeat.set(1) if self.newMaintenance.repeat != None else self.varRepeat.set(0)
+        
+        #Tittle
+        Label(mainFrame, text='Mantenimiento preventivo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+
+        #Date
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=40)
+        today = datetime.now()
+        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),bg="#ffffff", selectmode='day', year=int(maintenance.date.strftime('%Y')), month = int(maintenance.date.strftime('%m')), day = int(maintenance.date.strftime('%d')))
+        self.cal.place(x=10, y=70)
+
+        #Estado------------
+        self.listaEstados=[maintenances.Done, maintenances.Programmed]
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=280)
+        self.estado = ttk.Combobox(mainFrame, state='readonly',values=self.listaEstados)
+        self.estado.set(self.newMaintenance.status)
+        self.estado.place(x=10, y=310)
+
+        #Responsible
+        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=340)
+        self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = employers.ver('nombre'))
+        self.responsible.set(employers.Employer(id=self.newMaintenance.responsible).name)
+        self.responsible.place(x=10, y=370)
+
+        #Repeat
+        self.repeatOn = Checkbutton(mainFrame, bg="#ffffff", text="Repetir cada", font=("Segoe UI", "10", "normal"), variable=self.varRepeat, onvalue=1, offvalue=0)
+        self.repeatOn.place(x=10, y=400)
+        self.repeat = Entry(mainFrame, width=5, highlightthickness=2)
+        self.repeat.insert(0, self.newMaintenance.repeat)
+        self.repeat.place(x=120, y=400)
+        Label(mainFrame, text='días', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=160, y=400)
+
+        #Description
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=430)
+        self.description = Text(mainFrame, width=40, height=9, font=("Segoe UI", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1, wrap=WORD)
+        self.description.insert(INSERT, self.newMaintenance.description)
+        self.description.place(x=10, y=460)
+
+        Button(mainFrame, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.nuevoGuardar).place(x=root.winfo_width()-100, y=10)
+
+        #Departamento
+        self.listaDepartamentos = areas.getDepartamentos()
+        self.listaNombresDepartamentos=[]
+        for x in self.listaDepartamentos:
+            self.listaNombresDepartamentos.append(x[1])
+        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=10)
+        self.departamento = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresDepartamentos)
+        self.departamento.bind("<<ComboboxSelected>>", self.ActualizarAreas)
+        self.departamento.place(x=400, y=40)
+
+        #Area
+        self.listaNombresAreas=[]
+        Label(mainFrame, text='Área', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=600, y=10)
+        self.area = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresAreas)
+        self.area.bind("<<ComboboxSelected>>", self.ActualizarEquipos)
+        self.area.place(x=600, y=40)
+
+        #Plants table
+        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=80)
+        self.tabla = crearTabla(
+            ['Nombre', 'Descripción'],
+            [1,],
+            [120, 150],
+            [('','Seleccione un area y departamento'),],
+            mainFrame,
+            10,
+            self.actualizarActividades
+        )
+        self.tabla.place(x=400, y=110)
+
+        #Activities table
+        Label(mainFrame, text='Actividades', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=400, y=340)
+        self.tablaActividadesAsignadas = crearTabla(
+            ['Nombre', 'Descripción'],
+            [1,],
+            [120, 150],
+            [('',''),],
+            mainFrame,
+            10,
+            ''
+        )
+        self.tablaActividadesAsignadas.place(x=400, y=370)
+
+        #Botón para asignar actividad
+        Button(mainFrame, text=' + ',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command = self.asignarActividad).place(x=650, y=600)
+
+        #Tabla de equipos
+        self.activitiesTable = ScrollableFrame(mainFrame, x=800, y=10, width=300, height=root.winfo_height()-100)
+        self.activitiesTable.place(800, 10)
+        
+        for activity in self.newMaintenance.activities:
+            actualFrame = Frame(self.activitiesTable.scrollableFrame)
+            actualFrame.config(bg=colorGray, highlightthickness=0, width=290, height=100)
+            actualFrame.pack(pady=5, padx=5)
+            #Plant
+            Label(actualFrame, text=activity.plant.department.name + ' > ' + activity.plant.area.name + ' > '+ activity.plant.name, fg='#444444', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='left').place(x=10, y=10)
+            #Name
+            Label(actualFrame, text=activity.name, fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=30)
+            #Description
+            Label(actualFrame, text=activity.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=270, justify='left').place(x=10, y=50)
+            #Button
+            Button(actualFrame, text=' - ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=deleteActivityFromList(self.newMaintenance.activities.index(activity), self)).place(x=260, y=10)
+    
+    def editCorrectiveWindow(self, maintenance):
+        """Open a window to edit a preventive maintenance.
+
+        Args:
+            maintenance (Maintenance): _description_
+        """ 
+        global mainFrame
+        clearMainFrame()
+        
+        #Var
+        self.newMaintenance = maintenance
+        self.searchString = StringVar(mainFrame)
+        descriptionString = StringVar(mainFrame)
+        self.quantity = StringVar(mainFrame)
+
+        self.selectedPlants = self.newMaintenance.plants
+
+        #Tittle
+        Label(mainFrame, text='Mantenimiento correctivo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+
+        #Date
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=40)
+        today = datetime.now()
+        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),bg="#ffffff", selectmode='day', year=int(self.newMaintenance.date.strftime('%Y')), month = int(self.newMaintenance.date.strftime('%m')), day = int(self.newMaintenance.date.strftime('%d')))
+        self.cal.place(x=10, y=70)
+
+        #Responsible
+        Label(mainFrame, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=300, y=40)
+        self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = employers.ver('nombre'))
+        self.responsible.set(employers.Employer(id = self.newMaintenance.responsible).name)
+        self.responsible.place(x=300, y=70  )
+
+        #Description
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=300, y=100)
+        self.description = Text(mainFrame, width=120, height=4, font=("Segoe UI", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
+        self.description.insert(INSERT, self.newMaintenance.description)
+        self.description.place(x=300, y=130)
+
+        Button(mainFrame, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveCorrective).place(x=root.winfo_width()-100, y=10)
+
+        #Departamento
+        self.listaDepartamentos = areas.getDepartamentos()
+        self.listaNombresDepartamentos=[]
+        for x in self.listaDepartamentos:
+            self.listaNombresDepartamentos.append(x[1])
+        Label(mainFrame, text='Departamento', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=450, y=40)
+        self.departamento = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresDepartamentos)
+        self.departamento.bind("<<ComboboxSelected>>", self.ActualizarAreas)
+        self.departamento.place(x=450, y=70)
+
+        #Area
+        self.listaNombresAreas=[]
+        Label(mainFrame, text='Área', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=600, y=40)
+        self.area = ttk.Combobox(mainFrame, state='readonly',values=self.listaNombresAreas)
+        self.area.bind("<<ComboboxSelected>>", self.ActualizarEquipos)
+        self.area.place(x=600, y=70)
+        
+        #Status
+        self.statusList=[maintenances.Done, maintenances.Programmed]
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=750, y=40)
+        self.status = ttk.Combobox(mainFrame, state='readonly',values=self.statusList)
+        self.status.set(self.newMaintenance.status)
+        self.status.place(x=750, y=70)
+
+        #Plants table
+        Label(mainFrame, text='Equipos', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=280)
+        self.tabla = crearTabla(
+            ['Nombre', 'Descripción'],
+            [1,],
+            [200, 200],
+            [('','Seleccione un area y departamento'),],
+            mainFrame,
+            5, 
+            ''
+        )
+        self.tabla.place(x=10, y=310)
+
+        Button(mainFrame, text='+',font=("Segoe UI", "11", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.selectPlant).place(x=420, y=320)
+
+        #Plants table
+        Label(mainFrame, text='Equipos seleccionados', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=450)
+        self.selectedPlantsTable = crearTabla(
+            ['Nombre', 'Descripción'],
+            [1,],
+            [200, 200],
+            [('','Aún no hay nada seleccionado'),],
+            mainFrame,
+            5, 
+            ''
+        )
+        self.selectedPlantsTable.place(x=10, y=480)
+
+        Button(mainFrame, text='-',font=("Segoe UI", "11", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.deselectPlant).place(x=420, y=490)
+
+        #Search
+        Label(mainFrame, text='Productos usados', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=500, y=230)
+        search = Frame(mainFrame)
+        search.config(bg='#ECECEC', width=400, height=30)
+        search.place(x=500 , y=260)
+        global searchImg 
+        searchImg= PhotoImage(file='img/search.png')
+        Label(search, image = searchImg, bd=0, width=12, heigh=12).place(x=12, y=9)
+        searchEntry = Entry(search, width=50, textvariable=self.searchString, font=("Segoe UI", "10", "normal"), foreground="#222222", background='#ECECEC', highlightthickness=0, relief=FLAT)
+        searchEntry.place(x=30, y=4)
+        searchEntry.bind('<Key>', self.updateInventorySearch)
+        
+        #Products table
+        self.productsTable = crearTabla(['Nombre', 'Descripción', 'Marca', 'Modelo'], [1,], [100,100,100,100], [['','','',''],], mainFrame, 4, '' )
+        self.productsTable.place(x=500, y=300)
+        
+        #Coment
+        Label(mainFrame, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=500, y=430)
+        self.comment = Text(mainFrame, width=43, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=3)
+        self.comment.place(x=590, y=430)
+        
+        #Quantity
+        Label(mainFrame, text='Cantidad',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=500, y=500)
+        Entry(mainFrame, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=590, y=500)
+        
+        #Add product
+        Button(mainFrame, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToMaintenance).place(x=820, y=530)
+        
+        #Products
+        Label(mainFrame, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=950, y=230)
+        
+        self.productsFrame = ScrollableFrame(mainFrame, width=380, height=200, x=950, y=260)
+        self.productsFrame.place(x=950, y=260)
+        
+        self.updateProductsFrame()
+        self.updatePlantsTable()
+        
     def updateInventorySearch(self, event):
         productsList = inventory.findByName(self.searchString.get())
         self.productsTable.delete(*self.productsTable.get_children())
@@ -1675,30 +1915,28 @@ class Mantenimientos(Crm):
 
     def selectPlant(self):
         plantId = self.tabla.focus()
-        plantData = plants.buscar(plantId)
+        plantData = plants.Plant(id = plantId)
         if not plantData in self.selectedPlants:
             self.selectedPlants.append(plantData)
             print(f"Plant with id {plantId} added to the maintenance")
-        self.selectedPlantsTable.delete(*self.selectedPlantsTable.get_children())
-        if len(self.selectedPlants) == 0:
-            self.selectedPlantsTable.insert('', 0, id = 0, values = 'Aún no hay nada seleccionado', text = '',tags=("mytag",))
-            return
-        for x in self.selectedPlants:
-            self.selectedPlantsTable.insert('', 0, id = x[0], values = x[2], text = x[1],tags=("mytag",))
-        
+        self.updatePlantsTable()
 
     def deselectPlant(self):
         plantId = self.selectedPlantsTable.focus()
-        plantData = plants.buscar(plantId)
-        if plantData in self.selectedPlants:
-            self.selectedPlants.pop(self.selectedPlants.index(plantData))
-            print(f"Plant with id {plantId} removed to the maintenance")
+        plantData = plants.Plant(id = plantId)
+        for plant in self.selectedPlants:
+            if plantData.id == plant.id:
+                self.selectedPlants.pop(self.selectedPlants.index(plant))
+                print(f"Plant with id {plantId} removed to the maintenance")
+        self.updatePlantsTable()
+
+    def updatePlantsTable(self):
         self.selectedPlantsTable.delete(*self.selectedPlantsTable.get_children())
         if len(self.selectedPlants) == 0:
             self.selectedPlantsTable.insert('', 0, id = 0, values = 'Aún no hay nada seleccionado', text = '',tags=("mytag",))
             return
         for x in self.selectedPlants:
-            self.selectedPlantsTable.insert('', 0, id = x[0], values = x[2], text = x[1],tags=("mytag",))
+            self.selectedPlantsTable.insert('', 0, id = x.id, values = x.name, text = x.description,tags=("mytag",))
 
     def saveCorrective(self):
         self.newMaintenance.date = datetime.combine(self.cal.selection_get(), datetime.min.time())
@@ -1855,6 +2093,11 @@ class Mantenimientos(Crm):
             Label(self.info, text='Repetir cada '+str(sel.repeat)+' días',fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=90)
         #Label descripción mantenimiento
         Label(self.info, text=sel.description, bg="#ffffff", font=("Segoe UI", "10", "normal"), wraplength=root.winfo_width()*0.18, justify='left').place(x=0, y=120)
+        #Edit Button
+        if sel.type == maintenances.Preventive:
+            Button(self.info, text='Editar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.editPreventiveWindow(sel)).place(x=0, y=root.winfo_height()-200)
+        if sel.type == maintenances.Corrective:
+            Button(self.info, text='Editar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.editCorrectiveWindow(sel)).place(x=0, y=root.winfo_height()-200)    
         #Boton realizar
         if sel.status == 'Programado':
             Button(self.info, text='Realizar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.realizarMantenimiento(id)).place(x=0, y=root.winfo_height()-150)
@@ -1868,7 +2111,7 @@ class Mantenimientos(Crm):
         if sel.status == maintenances.Cancelled:
             Button(self.info, text='Eliminar', font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.eliminarMantenimiento(sel)).place(x=0, y=root.winfo_height()-150)
             
-        #Delete Button
+        #WorkOrder Button
         Button(self.info, text='Orden de trabajo', font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.maintenanceToWorkOrder(sel)).place(x=140, y=root.winfo_height()-150)
 
         if sel.type == maintenances.Preventive:
