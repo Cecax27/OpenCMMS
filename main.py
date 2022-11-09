@@ -1252,9 +1252,13 @@ class Actividades():
             messagebox.showinfo(title='Actividad eliminada', message=texto)
         self.ventana.destroy()
 
+def func_displayMaintenance(id, object):
+    return lambda event: object.parent.objetoMantenimientos.displayMaintenance(id) 
+
 class Mantenimientos(Crm):
     def __init__(self, padre):
         self.padre = padre
+        self.parent = padre
         global mainFrame
         
     def main(self):
@@ -1267,9 +1271,11 @@ class Mantenimientos(Crm):
         Label(mainFrame, text='Mantenimientos', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
 
         #Buttons
-        Button(mainFrame, text='+ Mantenimiento preventivo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.nuevo).place(x=10, y=40)
+        Button(mainFrame, text='+ Mantenimiento preventivo',font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.nuevo).place(x=10, y=40)
 
-        Button(mainFrame, text='+ Mantenimiento correctivo',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.newCorrective).place(x=200, y=40)
+        Button(mainFrame, text='+ Mantenimiento correctivo',font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.newCorrective).place(x=200, y=40)
+        
+        Button(mainFrame, text='Ver todos',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.allMaintenancesWindow).place(x=390, y=40)
 
         #Show all maintenances
         lista = maintenances.getAll()[0:10]
@@ -1360,6 +1366,36 @@ class Mantenimientos(Crm):
         canvasprogrammedMaintenances.pack(side="left", fill="both", expand=True, padx=2, pady=2)
         scrollbarprogrammedMaintenances.pack(side="right", fill="y")
 
+    def allMaintenancesWindow(self):
+        global mainFrame
+        clearMainFrame()
+        
+        Label(mainFrame, text='Mantenimientos', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        maintenancesList = maintenances.getAll()
+        
+        #New
+        #Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newWorkOrder).place(x=root.winfo_width()-100, y=20)
+        
+        maintenancesFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
+        maintenancesFrame.place(x=0, y=0)
+        
+        Label(mainFrame, text='Id', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=20, y=40)
+        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=90, y=40)
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=270, y=40)
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=370, y=40)
+        
+        for maint in maintenancesList:
+            reqNumber = maintenancesList.index(maint)
+            backColor = colorGray if reqNumber%2==0 else colorWhite
+            frame = Frame(maintenancesFrame.scrollableFrame)
+            frame.config(width=root.winfo_width()-80, height=30, bg=backColor)
+            frame.bind('<Button-1>', func_displayMaintenance(maint.id, self))
+            frame.pack(pady=1)
+            Label(frame, text=maint.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
+            Label(frame, text=datetime.date(maint.date).strftime("%d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
+            Label(frame, text=maint.status.capitalize(), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=260, y=4)
+            Label(frame, text=maint.description, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=360, y=4)
+    
     def ActualizarAreas(self, event):
         #print(self.departamento2.current())
         self.listaAreas = areas.buscarPorDepartamento( self.listaDepartamentos[self.departamento.current()][0])
