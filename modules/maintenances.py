@@ -86,13 +86,13 @@ class Maintenance:
             return 0
         if self.type == Corrective:
             for plant in self.plants:
-                if findCorrectiveActivity(plant[0]):
-                    agregarActividad(self.id, findCorrectiveActivity(plant[0]))
-                    print(f"Plant Id {plant[0]} added")
+                if findCorrectiveActivity(plant.id):
+                    agregarActividad(self.id, findCorrectiveActivity(plant.id))
+                    print(f"Plant Id {plant.id} added")
                 else:
-                    nuevaActividadAsignada('Mantenimiento correctivo', 'Se corrigió alguna falla en el equipo', 2, plant[0])
-                    agregarActividad(self.id, findCorrectiveActivity(plant[0]))
-                    print(f"Plant Id {plant[0]} added")
+                    nuevaActividadAsignada('Mantenimiento correctivo', 'Se corrigió alguna falla en el equipo', 2, plant.id)
+                    agregarActividad(self.id, findCorrectiveActivity(plant.id))
+                    print(f"Plant Id {plant.id} added")
         elif self.type == Preventive:
             for i in self.activities:
                 agregarActividad(self.id, i.id)
@@ -364,7 +364,10 @@ def ultimoMantenimiento():
 
 def ultimoMantenimientoRealizado(id):
     """Busca el último mantenimiento registrado de un equipo"""
-    return Maintenance(id = sql.petition(f"SELECT mantenimientos.id, MAX(mantenimientos.fecha) FROM mantenimientos LEFT JOIN mantenimientos_actividadesAsignadas ON mantenimientos.id = mantenimientos_actividadesAsignadas.mantenimientoId LEFT JOIN actividadesAsignadas ON mantenimientos_actividadesAsignadas.actividadesId = actividadesAsignadas.id WHERE actividadesAsignadas.idEquipo = {id} AND mantenimientos.estado = '{Done}'")[0][0])
+    maintenanceId = sql.petition(f"SELECT mantenimientos.id, MAX(mantenimientos.fecha) FROM mantenimientos LEFT JOIN mantenimientos_actividadesAsignadas ON mantenimientos.id = mantenimientos_actividadesAsignadas.mantenimientoId LEFT JOIN actividadesAsignadas ON mantenimientos_actividadesAsignadas.actividadesId = actividadesAsignadas.id WHERE actividadesAsignadas.idEquipo = {id} AND mantenimientos.estado = '{Done}'")[0][0]
+    if maintenanceId == None:
+        return None
+    return Maintenance(id = maintenanceId)
 
 def ultimoMantenimientoProgramado(id):
     """Busca el último mantenimiento registrado de un equipo"""

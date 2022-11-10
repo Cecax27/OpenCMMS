@@ -1920,7 +1920,7 @@ class Mantenimientos(Crm):
             self.selectedPlants.append(plantData)
             print(f"Plant with id {plantId} added to the maintenance")
         self.updatePlantsTable()
-
+    
     def deselectPlant(self):
         plantId = self.selectedPlantsTable.focus()
         plantData = plants.Plant(id = plantId)
