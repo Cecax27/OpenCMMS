@@ -1920,7 +1920,7 @@ class Mantenimientos(Crm):
             self.selectedPlants.append(plantData)
             print(f"Plant with id {plantId} added to the maintenance")
         self.updatePlantsTable()
-    
+
     def deselectPlant(self):
         plantId = self.selectedPlantsTable.focus()
         plantData = plants.Plant(id = plantId)
@@ -2319,28 +2319,48 @@ class Inventory():
         Label(mainFrame, text='Inventario', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
         productsList = inventory.getProducts()
         
-        productsFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
-        productsFrame.place(x=0, y=0)
+        #Var
+        self.searchString = StringVar(mainFrame)
         
-        width = 300
-        height = 200
-        itemX = int((root.winfo_width()-40)/width)
-        itemSeparation = ((root.winfo_width()-40)-(width*itemX))/(itemX+4)
+        #Search
+        search = Frame(mainFrame)
+        search.config(bg='#ECECEC', width=(root.winfo_width()/2)-40, height=30)
+        search.place(x=200 , y=10)
+        global searchImg 
+        searchImg= PhotoImage(file='img/search.png')
+        Label(search, image = searchImg, bd=0, width=12, heigh=12).place(x=12, y=9)
+        searchEntry = Entry(search, width=95, textvariable=self.searchString, font=("Segoe UI", "10", "normal"), foreground="#222222", background='#ECECEC', highlightthickness=0, relief=FLAT)
+        searchEntry.place(x=30, y=4)
+        searchEntry.bind('<Key>', self.updateInventoryFrame)
+        
+        self.productsFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
+        self.productsFrame.place(x=0, y=0)
+        
+        self.insertProducts(productsList)
+            
+    def updateInventoryFrame(self, event):
+        productsList = inventory.findByName(self.searchString.get())
+        self.productsFrame.clear()
+        self.insertProducts(productsList)
+            
+    def insertProducts(self, productsList):
+        itemX = int((root.winfo_width()-40)/300)
+        itemSeparation = ((root.winfo_width()-40)-(300*itemX))/(itemX+4)
         for product in productsList:
             productNumber = productsList.index(product)
-            frame = Frame(productsFrame.scrollableFrame)
-            frame.config(width=width, height=height, bg=colorGray)
+            frame = Frame(self.productsFrame.scrollableFrame)
+            frame.config(width=300, height=200, bg=colorGray)
             frame.bind('<Button-1>', func_displayProduct(product.id, self))
-            productsFrame.scrollableFrame.update()
+            self.productsFrame.scrollableFrame.update()
             frame.grid(column=productNumber%itemX, row=int(productNumber/itemX), pady=itemSeparation, padx=itemSeparation)
             title = Label(frame, text=product.name, bg=colorGray, fg='#444444',font=("Segoe UI", "10", "bold"), wraplength=180, justify=LEFT)
             title.place(x=10, y=10)
             title.update()
-            description = Label(frame, text=product.description, bg=colorGray,fg='#666666', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT)
+            description = Label(frame, text=product.description, bg=colorGray, fg='#666666', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT)
             description.place(x=10, y=10+title.winfo_height())
             description.update()
             Label(frame, text=(product.brand if product.brand != None else '')+(' - '+product.model if product.model != None else ''), bg=colorGray,fg='#555555', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT).place(x=10, y=20+description.winfo_height()+title.winfo_height())
-            Label(frame, text=str(product.quantity)+ ' disponible', bg=colorGray,fg=colorRed if product.quantity==0 else colorGreen, font=("Segoe UI", "10", "normal")).place(x=10, y=height-30)
+            Label(frame, text=str(product.quantity)+ ' disponible', bg=colorGray,fg=colorRed if product.quantity==0 else colorGreen, font=("Segoe UI", "10", "normal")).place(x=10, y=200-30)
             
     def displayProduct(self, id):
         global mainFrame
@@ -2815,7 +2835,7 @@ class WorkOrders:
         clearMainFrame()
         
         Label(mainFrame, text='Ordenes de trabajo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
-        workOrdersList = workorders.getAll()
+        workOrdersList = workorders.getAll(orderby='date', order='DESC')
         
         #New
         Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newWorkOrder).place(x=root.winfo_width()-100, y=20)

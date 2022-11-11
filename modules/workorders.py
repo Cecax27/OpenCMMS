@@ -111,9 +111,18 @@ class WorkOrder():
     def generatePDF(self, filename):
         pdf.createWorkOrder(self, filename)
     
-def getAll(order = 'id'):
+def getAll(orderby = 'id', order = 'ASC'):
+    """_summary_
+
+    Args:
+        orderby (str, optional): _description_. Defaults to 'id'.
+        order (str, optional): 'DESC' or 'ASC'. Defaults to 'ASC'.
+
+    Returns:
+        _type_: _description_
+    """
     list = []
-    for id in sql.petition(f"SELECT id FROM workorders ORDER BY {order}"):
+    for id in sql.petition(f"SELECT id FROM workorders ORDER BY {orderby} {order}"):
         list.append(WorkOrder(id = id[0]))
     return list
     
