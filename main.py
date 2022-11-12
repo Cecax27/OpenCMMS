@@ -2198,6 +2198,8 @@ class Empleados():
         
         employerList = employers.getAll() 
         
+        Button(mainFrame, text='Nuevo',font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newEmployerWindow).place(x=root.winfo_width()-100, y=35)
+        
         employerFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-40, height=root.winfo_height()-130, x=10, y=60)
         employerFrame.place(x=10, y=40)
         
@@ -2299,6 +2301,42 @@ class Empleados():
             Label(mant, text=maintenance.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
             #Botón
             Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(maintenance.id, self)).place(x=root.winfo_width()/2-170, y=60)
+
+    def newEmployerWindow(self):
+        global mainFrame
+        clearMainFrame()
+        
+        Label(mainFrame, text='Empleado', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=26)
+        Label(mainFrame, text='Nuevo', bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
+        
+        #Var
+        nameString = StringVar(mainFrame)
+        keyString = StringVar(mainFrame)
+        
+        #Save
+        Button(mainFrame, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveEmployer(nameString, keyString)).place(x=root.winfo_width()-100, y=35)
+        
+        #Name
+        Label(mainFrame, text='Nombre',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=40, y=200)
+        Entry(mainFrame, width=20, textvariable=nameString, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=40, y=230)
+        
+        #Key
+        Label(mainFrame, text='Código',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=40, y=300)
+        Entry(mainFrame, width=20, textvariable=keyString, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=40, y=330)
+        
+        
+    def saveEmployer(self, name, key):
+        """_summary_
+
+        Args:
+            name (stringVar): _description_
+            key (stringVar): _description_
+        """
+        newEmployer = employers.Employer()
+        newEmployer.name = name.get()
+        newEmployer.key = int(key.get())
+        newEmployer.save()
+        self.displayEmployer(newEmployer.id)
 
 def func_displayRequisition(id, object):
     return lambda event: object.parent.inventory.displayRequisition(id)

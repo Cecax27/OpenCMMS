@@ -6,10 +6,10 @@ except:
 #Classes
 class Employer():
     
-    def __init__(self, id = 0):
+    def __init__(self, id = None):
         """When creating anew employer object, you can give the id of an existing employer or create a blank object"""
         self.id = id
-        if self.id != 0:
+        if self.id != None:
             self.findById(self.id)
         
     def __repr__(self):
@@ -19,6 +19,15 @@ class Employer():
         rawData = buscar(id)
         self.key = rawData[1]
         self.name = rawData[2]
+    
+    def save(self):
+        if self.id == None:
+            sql.petition(f"INSERT INTO empleados VALUES (NULL, {self.key}, '{self.name}')")
+            self.id = sql.petition("SELECT max(id) FROM empleados")[0][0]
+            return True
+        else:
+            sql.petition(f"UPDATE empleados SET name = {self.name}, key = {self.key} WHERE id = {self.id}")
+            return True
         
 
 def new(clave, nombre):
