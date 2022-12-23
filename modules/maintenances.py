@@ -247,6 +247,12 @@ def findPendingMaintenances(employerId = 0):
         for id in sql.peticion(instruction):
             maintenancesList.append(Maintenance(id = id[0]))
         return maintenancesList
+
+def getMaintenancesToWorkOrders():
+    list = []
+    for id in sql.petition(f"SELECT id FROM mantenimientos WHERE estado='Programado' ORDER BY fecha DESC"):
+        list.append(Maintenance(id = id[0]))
+    return list
     
 def findOverdueMaintenances(employerId = 0):
     """Find overdue maintenances. If you give the employer id, it find pending maintenances for that employer"""

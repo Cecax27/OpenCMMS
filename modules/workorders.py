@@ -107,6 +107,35 @@ class WorkOrder():
         """
         sql.petition(f"DELETE FROM workorders_detail WHERE workorder_id = {self.id}")
         sql.petition(f"DELETE FROM workorders WHERE id = {self.id}")
+    
+    def hasMaintenance(self, maintenance) -> bool:
+        """Check inf the workorder has the maintenance added.
+
+        Args:
+            maintenance (Maintenance object): The maintenance to find.
+
+        Returns:
+            bool: True if exists, False if not.
+        """
+        for maint in self.maintenances:
+            if maint.id == maintenance.id:
+                return True
+        return False
+    
+    def removeMaintenance(self, maintenance) -> bool:
+        """Remove a maintenance from the workorder.
+
+        Args:
+            maintenance (Maintenance object): Maintenance object to remove.
+
+        Returns:
+            bool: True if the maintenance was removed, False if not exist in the workorder.
+        """
+        for maint in self.maintenances:
+            if maint.id == maintenance.id:
+                self.maintenances.pop(self.maintenances.index(maint))
+                return True
+        return False
         
     def generatePDF(self, filename):
         pdf.createWorkOrder(self, filename)

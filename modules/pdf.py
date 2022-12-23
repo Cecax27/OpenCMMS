@@ -107,8 +107,8 @@ def createRequisitionReport(requisition, filename):
             for line in range(0,int(len(product.product.description)/55)+1,1):
                 description.textLine(product.product.description[line*55:(line+1)*55])
             page.drawText(description)
-        page.drawString(390, lastPosition, product.product.brand)
-        page.drawString(470, lastPosition, product.product.model)
+        page.drawString(390, lastPosition, product.product.brand if product.product.brand != None else '')
+        page.drawString(470, lastPosition, product.product.model if product.product.model != None else '')
         lastPosition -= 15+(7*(int(len(product.product.description)/55)+1))
         if product.comment != None:
             product.comment = product.comment.replace('\n', ' ')

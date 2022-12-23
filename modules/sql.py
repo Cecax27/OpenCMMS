@@ -27,6 +27,7 @@ def checkDatabase():
 	"date"	TIMESTAMP NOT NULL,
 	"status"	TEXT NOT NULL,
 	"description"	TEXT,
+ 	"delivered"	TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT)
 	);''')
     

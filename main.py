@@ -21,6 +21,10 @@ from modules import inventory
 from modules import sql
 from modules import workorders
 import locale
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+import numpy as np
 
 #locale.setlocale(locale.LC_ALL, 'es-ES')
 
@@ -31,6 +35,7 @@ colorBlue = '#37abc8'
 colorGray = '#f2f2f2'
 colorDarkGray = '#dadada'
 colorWhite = "#ffffff"
+colorBlack = "#454545"
 
 #Funciones--------
 def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
@@ -413,8 +418,7 @@ class BarraMenu(Crm):
         menuMantenimientos = Menu(self.menubar, tearoff=0)
         menuMantenimientos.add_command(label='Crear mantenimiento', command= lambda:padre.objetoMantenimientos.nuevo())
         menuMantenimientos.add_command(label='Programar mantenimientos', command= lambda:padre.objetoMantenimientos.programar())
-        #menuMantenimientos.add_command(label='Editar actividad', command= lambda:padre.objetoActividades.editar())
-        #menuMantenimientos.add_command(label='Eliminar actividad', command= lambda:padre.objetoActividades.eliminar())
+        menuMantenimientos.add_command(label='Estadísticas', command= lambda:padre.objetoMantenimientos.statistics())
 
         #Inventory menu------------------------
         productMenu = Menu(self.menubar, tearoff=0)
@@ -1433,7 +1437,7 @@ class Mantenimientos(Crm):
         #Date
         Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=40)
         today = datetime.now()
-        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),bg="#ffffff", selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')))
+        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),background=colorWhite, selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')), showweeknumbers=False, foreground= colorBlack, bordercolor=colorWhite, headersbackground=colorWhite, headersforeground= colorBlack, selectbackground=colorBlue, weekendbackground=colorWhite, weekendforeground=colorBlack, selectforeground=colorGray, normalbackground=colorWhite, normalforeground=colorBlack, othermonthbackground=colorGray, othermonthweforeground=colorBlack)
         self.cal.place(x=10, y=70)
 
         #Estado------------
@@ -1538,7 +1542,7 @@ class Mantenimientos(Crm):
         #Date
         Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=40)
         today = datetime.now()
-        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),bg="#ffffff", selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')))
+        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),background=colorWhite, selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')), showweeknumbers=False, foreground= colorBlack, bordercolor=colorWhite, headersbackground=colorWhite, headersforeground= colorBlack, selectbackground=colorBlue, weekendbackground=colorWhite, weekendforeground=colorBlack, selectforeground=colorGray, normalbackground=colorWhite, normalforeground=colorBlack, othermonthbackground=colorGray, othermonthweforeground=colorBlack)
         self.cal.place(x=10, y=70)
 
         #Responsible
@@ -1659,7 +1663,8 @@ class Mantenimientos(Crm):
         #Date
         Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=40)
         today = datetime.now()
-        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),bg="#ffffff", selectmode='day', year=int(maintenance.date.strftime('%Y')), month = int(maintenance.date.strftime('%m')), day = int(maintenance.date.strftime('%d')))
+    
+        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),background=colorWhite, selectmode='day', year=int(maintenance.date.strftime('%Y')), month = int(maintenance.date.strftime('%m')), day = int(maintenance.date.strftime('%d')), showweeknumbers=False, foreground= colorBlack, bordercolor=colorWhite, headersbackground=colorWhite, headersforeground= colorBlack, selectbackground=colorBlue, weekendbackground=colorWhite, weekendforeground=colorBlack, selectforeground=colorGray, normalbackground=colorWhite, normalforeground=colorBlack, othermonthbackground=colorGray, othermonthweforeground=colorBlack)
         self.cal.place(x=10, y=70)
 
         #Estado------------
@@ -1777,7 +1782,8 @@ class Mantenimientos(Crm):
         #Date
         Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=10, y=40)
         today = datetime.now()
-        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),bg="#ffffff", selectmode='day', year=int(self.newMaintenance.date.strftime('%Y')), month = int(self.newMaintenance.date.strftime('%m')), day = int(self.newMaintenance.date.strftime('%d')))
+        
+        self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),background=colorWhite, selectmode='day', year=int(self.newMaintenance.date.strftime('%Y')), month = int(self.newMaintenance.date.strftime('%m')), day = int(self.newMaintenance.date.strftime('%d')), showweeknumbers=False, foreground= colorBlack, bordercolor=colorWhite, headersbackground=colorWhite, headersforeground= colorBlack, selectbackground=colorBlue, weekendbackground=colorWhite, weekendforeground=colorBlack, selectforeground=colorGray, normalbackground=colorWhite, normalforeground=colorBlack, othermonthbackground=colorGray, othermonthweforeground=colorBlack)
         self.cal.place(x=10, y=70)
 
         #Responsible
@@ -1936,7 +1942,7 @@ class Mantenimientos(Crm):
             self.selectedPlantsTable.insert('', 0, id = 0, values = 'Aún no hay nada seleccionado', text = '',tags=("mytag",))
             return
         for x in self.selectedPlants:
-            self.selectedPlantsTable.insert('', 0, id = x.id, values = x.name, text = x.description,tags=("mytag",))
+            self.selectedPlantsTable.insert('', 0, id = x.id, values = x.description, text = x.name,tags=("mytag",))
 
     def saveCorrective(self):
         self.newMaintenance.date = datetime.combine(self.cal.selection_get(), datetime.min.time())
@@ -2178,6 +2184,52 @@ class Mantenimientos(Crm):
         workorder.save()
         f = asksaveasfile(initialfile=f"Orden de trabajo {workorder.id}.pdf", defaultextension='.pdf', filetypes=[('Portable Document File', '*.pdf'),])
         workorder.generatePDF(f.name)
+        
+    def statistics(self):
+        global mainFrame
+        clearMainFrame()
+        
+        #Tittle
+        Label(mainFrame, text='Estadísticas de', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        Label(mainFrame, text='mantenimientos', bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
+        
+        #InfoFrame
+        info = Frame(mainFrame, width=600, height=500, bg=colorWhite)
+        info.place(x=20, y=100)
+        #Maintenances
+        Label(info, text='Mantenimientos totales:', bg="#ffffff", font=("Segoe UI", "11", "bold")).grid(column=0, row=0, sticky='e')
+        Label(info, text=str(sql.petition("SELECT COUNT(id) FROM mantenimientos")[0][0]), bg="#ffffff", font=("Segoe UI", "11", "normal")).grid(column=1, row=0, sticky='w')
+        #Maintenances predictive
+        Label(info, text='Mantenimientos preventivos:', bg="#ffffff", font=("Segoe UI", "11", "bold")).grid(column=0, row=1, sticky='e')
+        Label(info, text=str(sql.petition("SELECT COUNT(id) FROM mantenimientos WHERE tipo='Preventivo'")[0][0]), bg="#ffffff", font=("Segoe UI", "11", "normal")).grid(column=1, row=1, sticky='w')
+        #Corrective maintenances
+        Label(info, text='Mantenimientos correctivos:', bg="#ffffff", font=("Segoe UI", "11", "bold")).grid(column=0, row=2, sticky='e')
+        Label(info, text=str(sql.petition("SELECT COUNT(id) FROM mantenimientos WHERE tipo='Correctivo'")[0][0]), bg="#ffffff", font=("Segoe UI", "11", "normal")).grid(column=1, row=2, sticky='w')
+        
+        #Graphs
+        graph = Frame(mainFrame, width=500, height=300)
+        graph.place(x=20, y=200)
+        fig = Figure(figsize=(5,4), dpi=100)
+        plot1 = fig.add_subplot(211)
+        rawData = sql.petition("SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE strftime('%Y',fecha)='2022' AND tipo='Correctivo' GROUP BY strftime('%m',fecha)")
+        plot1.set_title("Mantenimientos correctivos por mes en 2022")
+        plot1.set_xlabel('Mes')
+        plot1.set_ylabel('Mantenimientos')
+        plot1.bar([row[0] for row in rawData],[row[1] for row in rawData], color='#93C2E4')
+        
+        plot2 = fig.add_subplot(212)
+        rawData = sql.petition("SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE strftime('%Y',fecha)='2022' AND tipo='Preventivo' GROUP BY strftime('%m',fecha)")
+        plot2.set_title("Mantenimientos preventivos por mes en 2022")
+        plot2.set_xlabel('Mes')
+        plot2.set_ylabel('Mantenimientos')
+        plot2.bar([row[0] for row in rawData],[row[1] for row in rawData], color='#93C2E4')
+        
+        canvas = FigureCanvasTkAgg(fig, master=graph)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
+        toolbar = NavigationToolbar2Tk(canvas, graph)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
 
 def createFunctionToDisplayEmployer(id, object):
     return lambda: object.parent.objetoEmpleados.displayEmployer(id)
@@ -2237,18 +2289,23 @@ class Empleados():
     def displayEmployer(self, id):
         clearMainFrame()
         
-        #Title
-        Label(mainFrame, text='Empleados', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
-        
         employer = employers.Employer(id = id)
         
         #Button back
-        Button(mainFrame, text=' ← Regresar ',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.main).place(x=10, y=40)
+        Button(mainFrame, text=' ← Regresar ',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.main).place(x=20, y=10)
         
+        #Edit
+        Button(mainFrame, text='Estadísticas',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.statistics(employer)).place(x=root.winfo_width()-120, y=35)
+        
+        #Title
+        Label(mainFrame, text='Empleado', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=40)
+        Label(mainFrame, text='ID '+str(employer.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=60)
         #Name
-        Label(mainFrame, text=employer.name, fg='#444444', bg='#ffffff', font=("Segoe UI", "16", "normal"), wraplength=300, justify='left').place(x=10, y=80)
+        Label(mainFrame, text='Nombre', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=105)
+        Label(mainFrame, text=employer.name, bg='#ffffff', font=("Segoe UI", "11", "normal")).place(x=80, y=105)
         #Key
-        Label(mainFrame, text='Clave: '+str(employer.key), fg='#777777', bg='#ffffff', font=("Segoe UI", "12", "normal"), wraplength=300, justify='left').place(x=10, y=120)
+        Label(mainFrame, text='Clave', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=130)
+        Label(mainFrame, text=str(employer.key), bg='#ffffff', font=("Segoe UI", "11", "normal")).place(x=60, y=130)
         
         #Areas
         Label(mainFrame, text='Areas', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=150)
@@ -2302,6 +2359,52 @@ class Empleados():
             #Botón
             Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(maintenance.id, self)).place(x=root.winfo_width()/2-170, y=60)
 
+    def statistics(self, employer):
+        global mainFrame
+        clearMainFrame()
+        
+        #Tittle
+        Label(mainFrame, text='Estadísticas de', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        Label(mainFrame, text=f"empleado id {employer.id}", bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
+        
+        #InfoFrame
+        info = Frame(mainFrame, width=600, height=500, bg=colorWhite)
+        info.place(x=20, y=100)
+        #Maintenances
+        Label(info, text='Mantenimientos totales:', bg="#ffffff", font=("Segoe UI", "11", "bold")).grid(column=0, row=0, sticky='e')
+        Label(info, text=str(sql.petition(f"SELECT COUNT(id) FROM mantenimientos WHERE responsable = {employer.id}")[0][0]), bg="#ffffff", font=("Segoe UI", "11", "normal")).grid(column=1, row=0, sticky='w')
+        #Maintenances predictive
+        Label(info, text='Mantenimientos preventivos:', bg="#ffffff", font=("Segoe UI", "11", "bold")).grid(column=0, row=1, sticky='e')
+        Label(info, text=str(sql.petition(f"SELECT COUNT(id) FROM mantenimientos WHERE tipo='Preventivo' AND responsable = {employer.id}")[0][0]), bg="#ffffff", font=("Segoe UI", "11", "normal")).grid(column=1, row=1, sticky='w')
+        #Corrective maintenances
+        Label(info, text='Mantenimientos correctivos:', bg="#ffffff", font=("Segoe UI", "11", "bold")).grid(column=0, row=2, sticky='e')
+        Label(info, text=str(sql.petition(f"SELECT COUNT(id) FROM mantenimientos WHERE tipo='Correctivo' AND responsable = {employer.id}")[0][0]), bg="#ffffff", font=("Segoe UI", "11", "normal")).grid(column=1, row=2, sticky='w')
+        
+        #Graphs
+        graph = Frame(mainFrame, width=500, height=300)
+        graph.place(x=20, y=200)
+        fig = Figure(figsize=(5,4), dpi=100)
+        plot1 = fig.add_subplot(211)
+        rawData = sql.petition(f"SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE strftime('%Y',fecha)='2022' AND tipo='Correctivo' AND responsable = {employer.id} GROUP BY strftime('%m',fecha)")
+        plot1.set_title("Mantenimientos correctivos por mes en 2022")
+        plot1.set_xlabel('Mes')
+        plot1.set_ylabel('Mantenimientos')
+        plot1.bar([row[0] for row in rawData],[row[1] for row in rawData], color='#93C2E4')
+        
+        plot2 = fig.add_subplot(212)
+        rawData = sql.petition(f"SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE strftime('%Y',fecha)='2022' AND tipo='Preventivo' AND responsable = {employer.id} GROUP BY strftime('%m',fecha)")
+        plot2.set_title("Mantenimientos preventivos por mes en 2022")
+        plot2.set_xlabel('Mes')
+        plot2.set_ylabel('Mantenimientos')
+        plot2.bar([row[0] for row in rawData],[row[1] for row in rawData], color='#93C2E4')
+        
+        canvas = FigureCanvasTkAgg(fig, master=graph)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
+        toolbar = NavigationToolbar2Tk(canvas, graph)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
+
     def newEmployerWindow(self):
         global mainFrame
         clearMainFrame()
@@ -2343,6 +2446,9 @@ def func_displayRequisition(id, object):
 
 def func_displayProduct(id, object):
     return lambda event: object.parent.inventory.displayProduct(id)
+
+def func_removeProductFromRequisition(id, object):
+    return lambda: object.parent.inventory.removeProductFromRequisition(id)
 
 class Inventory():
     
@@ -2409,16 +2515,27 @@ class Inventory():
         Label(mainFrame, text='Producto', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
         Label(mainFrame, text='ID '+str(product.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
         #Name
-        Label(mainFrame, text=product.name, bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
+        Label(mainFrame, text='Nombre', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=85)
+        Label(mainFrame, text=product.name, bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=90, y=85)
         #Description
-        Label(mainFrame, text=product.description, bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=20, y=110)
+        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=110)
+        Label(mainFrame, text=product.description, bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=105, y=110)
         #Quantity
-        Label(mainFrame, text='Cantidad disponbile: '+str(product.quantity), bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=20, y=150)
+        Label(mainFrame, text='Cantidad disponible', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=135)
+        Label(mainFrame, text=str(product.quantity), bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=170, y=135)
+        #Delivering Time
+        Label(mainFrame, text='Tiempo de entrega', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=160)
+        Label(mainFrame, text=str(product.deliveringTime().days)+' días', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=168, y=160)
+        #Delivering Time
+        Label(mainFrame, text='Tiempo estimado para agotarse', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=250, y=160)
+        Label(mainFrame, text=str(product.calculateOutputs().days*product.quantity)+' días', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=480, y=160)
+        #Graph
+        Button(mainFrame, text='Graficar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=product.graphMovements).place(x=840, y=35)
         #In
         Button(mainFrame, text='Entrada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newInputInventory(product)).place(x=900, y=35)
         #Out
         if product.quantity > 0:    
-            Button(mainFrame, text='Salida',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newOutputInventory(product)).place(x=1000, y=35)
+            Button(mainFrame, text='Salida',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newOutputInventory(product)).place(x=960, y=35)
             
         #Movements
         Label(mainFrame, text='Movimientos de inventario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
@@ -2442,6 +2559,7 @@ class Inventory():
             Label(productFrame, text=(mov.origin+' '+str(mov.origin_id)) if mov.origin != None else 'Movimiento del usuario', fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal")).place(x=200, y=10)
             #Comment
             Label(productFrame, text=mov.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=600, justify=LEFT).place(x=200, y=35)
+            
             
     def newInputInventory(self, product):
         self.window = Toplevel()
@@ -2489,7 +2607,7 @@ class Inventory():
         self.window.title('Registrar salida')
         
         mainframe = Frame(self.window)
-        mainframe.config(bg=colorWhite, width=400, height=500)
+        mainframe.config(bg=colorWhite, width=400, height=600)
         mainframe.pack()
         
         #Var
@@ -2501,27 +2619,33 @@ class Inventory():
         #Tittle
         Label(mainframe, text='Registrar salida', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
         
+        #Date
+        Label(mainframe, text='Fecha', fg="#777777",  bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=60)
+        today = datetime.now()
+        cal = Calendar(mainframe, font=("Segoe UI", "9", "normal"),background=colorWhite, selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')), showweeknumbers=False, foreground= colorBlack, bordercolor=colorWhite, headersbackground=colorWhite, headersforeground= colorBlack, selectbackground=colorBlue, weekendbackground=colorWhite, weekendforeground=colorBlack, selectforeground=colorGray, normalbackground=colorWhite, normalforeground=colorBlack, othermonthbackground=colorGray, othermonthweforeground=colorBlack)
+        cal.place(x=20, y=90)
+        
         #Quantity
-        Label(mainframe, text='Cantidad',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=70)
-        Entry(mainframe, width=50, textvariable=outputQuantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=100)
+        Label(mainframe, text='Cantidad',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=270)
+        Entry(mainframe, width=50, textvariable=outputQuantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=300)
         
         #Description
-        Label(mainframe, text='Comentario',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=140)
-        Entry(mainframe, width=50, textvariable=outputComment, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=170)
+        Label(mainframe, text='Comentario',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=330)
+        Entry(mainframe, width=50, textvariable=outputComment, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=360)
         
         #Origin
-        Label(mainframe, text='Origen',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=210)
-        Entry(mainframe, width=50, textvariable=outputOrigin, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=240)
+        Label(mainframe, text='Origen',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=390)
+        Entry(mainframe, width=50, textvariable=outputOrigin, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=420)
         
-        #Model
-        Label(mainframe, text='Id de origen',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=280)
-        Entry(mainframe, width=50, textvariable=outputOriginId, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=310)
+        #IDOrigin
+        Label(mainframe, text='Id de origen',fg="#777777", bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=450)
+        Entry(mainframe, width=50, textvariable=outputOriginId, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=480)
         
         #Save
-        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveOutputInventory(product, outputQuantity.get(), outputComment.get(), outputOrigin.get(), outputOriginId.get())).place(x=20, y=380)
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveOutputInventory(product, outputQuantity.get(), datetime.combine(cal.selection_get(), datetime.min.time()), outputComment.get(), outputOrigin.get(), outputOriginId.get())).place(x=20, y=550)
     
-    def saveOutputInventory(self, product, quantity, comment, origin, originId):
-        product.addMovement(datetime.now(),inventory.OUTPUT, quantity, comment, origin if origin != '' else None, originId if origin != '' else None)
+    def saveOutputInventory(self, product, quantity, date, comment, origin, originId):
+        product.addMovement(date, inventory.OUTPUT, quantity, comment, origin if origin != '' else None, originId if origin != '' else None)
         self.window.destroy()
         self.displayProduct(product.id)
         
@@ -2530,7 +2654,7 @@ class Inventory():
         clearMainFrame()
         
         Label(mainFrame, text='Requisiciones', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
-        requisitionsList = inventory.getRequisitions(quantity=10, order='date')
+        requisitionsList = inventory.getRequisitions(quantity=15, order='date')
         
         #New
         Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newRequisition).place(x=root.winfo_width()-100, y=20)
@@ -2563,14 +2687,24 @@ class Inventory():
         #Tittle
         Label(mainFrame, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
         Label(mainFrame, text='ID '+str(req.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
-        Label(mainFrame, text=req.status.capitalize(), bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
-        Label(mainFrame, text=datetime.date(req.date).strftime("%d / %b /  %Y"), bg="#ffffff", font=("Segoe UI", "14", "normal")).place(x=20, y=120)
+        #Status
+        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=85)
+        Label(mainFrame, text=req.status.capitalize(), bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=75, y=85)
+        #Created date
+        Label(mainFrame, text='Fecha de creación', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=110)
+        Label(mainFrame, text=datetime.date(req.date).strftime("%d / %b /  %Y"), bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=155, y=110)
+        #Delivered date
+        Label(mainFrame, text='Fecha de recepción', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=285, y=110)
+        Label(mainFrame, text=datetime.date(req.deliveredDate).strftime("%d / %b /  %Y") if req.deliveredDate != None else 'Sin fecha', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=425, y=110)
+        #Description
+        Label(mainFrame, text='Comentario', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=135)
+        Label(mainFrame, text=req.description, bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=110, y=135)
+        
+        #Edit
+        Button(mainFrame, text='Editar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newRequisition(req)).place(x=880, y=35)
         
         #Save
         Button(mainFrame, text='Guardar en PDF',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveRequisitionPDF(req)).place(x=934, y=35)
-        
-        #Description
-        Label(mainFrame, text=req.description, bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=20, y=160)
         
         #Make requested
         if req.status == inventory.STATUS_DRAFT:    
@@ -2588,7 +2722,9 @@ class Inventory():
         Button(mainFrame, text='Eliminar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.deleteRequisition(req)).place(x=1200, y=35)
             
         #Products
-        Label(mainFrame, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
+        Label(mainFrame, text='Descripción',fg="#000000", bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=30, y=200)
+        Label(mainFrame, text='Cantidad pedidos',fg="#000000", bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=1000, y=200)
+        Label(mainFrame, text='Cantidad entregados',fg="#000000", bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=1150, y=200)
         
         self.productsFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-60, height=root.winfo_height()-300, x=20, y=230)
         self.productsFrame.place(x=20, y=230)
@@ -2597,13 +2733,13 @@ class Inventory():
             productNumber = req.products.index(product)
             backColor = colorGray if productNumber%2==0 else colorWhite
             productFrame = Frame(self.productsFrame.scrollableFrame)
-            productFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=70)
+            productFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=70 if product.comment != None else 40)
             productFrame.pack(pady=1)
-            #Plant
-            name = Label(productFrame, text=product.product.name, fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
+            #Description
+            name = Label(productFrame, text=product.product.name, fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=450, justify='left')
             name.place(x=10, y=10)
             name.update()
-            Label(productFrame, text='Cantidad: '+str(product.quantity), fg=colorBlue, bg=backColor, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=11)
+            Label(productFrame, text=str(product.quantity), fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left').place(x=1030, y=10)
             Label(productFrame, text=product.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=1000, justify='left').place(x=10, y=35)
             productFrame.update()
             
@@ -2657,10 +2793,12 @@ class Inventory():
         
     def processPurchase(self, requisition, detailsList):
         for detail in detailsList:
-            detail[0].quantity = detail[1].get()
+            detail[0].deliveredQuantity = detail[1].get()
             detail[0].status = inventory.STATUS_DELIVERED
+            detail[0].deliveredDate = datetime.now()
             detail[0].save()
             detail[0].product.addMovement(datetime.now(), inventory.INPUT, detail[1].get(), detail[0].comment, inventory.REQUISITION, requisition.id)
+        requisition.deliveredDate = datetime.now()
         self.changeStatus(requisition, inventory.STATUS_DELIVERED)
         self.window.destroy()
         self.displayRequisition(requisition.id)
@@ -2757,10 +2895,10 @@ class Inventory():
             messagebox.showinfo(title='Categoría registrada', message='La categoría se ha registrado correctamente.')
         return True
     
-    def newRequisition(self):
+    def newRequisition(self, requisition = None):
         self.window = Toplevel()
         self.window.state('zoomed')
-        self.window.title('Requisición nueva')
+        self.window.title('Requisición nueva' if requisition == None else 'Editar requisición')
         
         self.window.update()
         mainframe = Frame(self.window)
@@ -2772,13 +2910,16 @@ class Inventory():
         descriptionString = StringVar(mainframe)
         self.quantity = StringVar(mainframe)
         
-        self.requisition = inventory.Requisition()
-        self.requisition.date = datetime.now()
-        self.requisition.status = inventory.STATUS_DRAFT
+        if requisition == None:
+            self.requisition = inventory.Requisition()
+            self.requisition.date = datetime.now()
+            self.requisition.status = inventory.STATUS_DRAFT
+        else:
+            self.requisition = requisition
         
         #Tittle
         Label(mainframe, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=26)
-        Label(mainframe, text='Nueva', bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
+        Label(mainframe, text='Nueva' if requisition == None else 'ID '+str(self.requisition.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
         
         #Save
         Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveRequisition).place(x=root.winfo_width()-100, y=35)
@@ -2822,6 +2963,10 @@ class Inventory():
         self.requisitionComment = Text(mainframe, width=int(((root.winfo_width())-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=6)
         self.requisitionComment.place(x=20, y=480)
         
+        if requisition != None:
+            self.updateProductsFrame()
+            self.requisitionComment.insert(INSERT, self.requisition.description)
+                
     def updateInventorySearch(self, event):
         productsList = inventory.findByName(self.searchString.get())
         self.productsTable.delete(*self.productsTable.get_children())
@@ -2837,23 +2982,29 @@ class Inventory():
         self.comment.delete("1.0", END)
         self.updateProductsFrame()
         
+    def removeProductFromRequisition(self, product):        
+        self.requisition.products.pop(self.requisition.products.index(product))
+        self.updateProductsFrame()
+        
     def updateProductsFrame(self):
         self.productsFrame.clear()
         for product in self.requisition.products:
             productFrame = Frame(self.productsFrame.scrollableFrame)
-            productFrame.config(bg=colorGray, highlightthickness=0, width=680, height=70)
+            productFrame.config(bg=colorGray, highlightthickness=0, width=600, height=70)
             productFrame.pack(pady=5, padx=5)
             #Plant
             name = Label(productFrame, text=product.product.name, fg='#000000', bg=colorGray, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left')
             name.place(x=10, y=10)
             name.update()
-            Label(productFrame, text='Cantidad: '+product.quantity, fg=colorBlue, bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=10)
+            Label(productFrame, text='Cantidad: '+str(product.quantity), fg=colorBlue, bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=name.winfo_width()+15, y=10)
             Label(productFrame, text=product.comment, fg='#4d4d4d', bg=colorGray, font=("Segoe UI", "9", "normal"), wraplength=600, justify='left').place(x=10, y=35)
             productFrame.update()
-            #Button(productFrame, text=' X ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=1, relief=FLAT, command=self.addProductToRequisition).place(x=productFrame.winfo_width()-35, y=10)
+            Button(productFrame, text=' X ',font=("Segoe UI", "9", "bold"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=1, relief=FLAT, command= func_removeProductFromRequisition(product, self)).place(x=productFrame.winfo_width()-35, y=10)
     
     def saveRequisition(self):
         self.requisition.description = self.requisitionComment.get('1.0', END)
+        if self.requisition.status == inventory.STATUS_DRAFT:
+            self.requisition.date = datetime.now()
         self.requisition.save()
         messagebox.showinfo(title='Requisición guardada', message=f"La requisición ha sido guardada con el ID {self.requisition.id}")
         self.window.destroy()
@@ -3004,7 +3155,89 @@ class WorkOrders:
         self.mainWindow()
     
     def newWorkOrder(self):
-        pass
+        self.window = Toplevel()
+        self.window.state('zoomed')
+        self.window.title('Orden de trabajo nueva')
+        self.window.update()
+        mainframe = Frame(self.window)
+        mainframe.config(bg=colorWhite, width=self.window.winfo_width(), height=self.window.winfo_height())
+        mainframe.pack()
+        
+        #Var
+        workorder = workorders.WorkOrder()
+        
+        #Title
+        Label(mainframe, text='Orden de trabajo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
+        Label(mainframe, text='Nueva', bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
+        
+        #Save
+        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveWorkOrder(workorder)).place(x=root.winfo_width()-100, y=35)
+        
+        #Date
+        Label(mainframe, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=100)
+        today = datetime.now()
+        self.cal = Calendar(mainframe, font=("Segoe UI", "9", "normal"),background=colorWhite, selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')), showweeknumbers=False, foreground= colorBlack, bordercolor=colorWhite, headersbackground=colorWhite, headersforeground= colorBlack, selectbackground=colorBlue, weekendbackground=colorWhite, weekendforeground=colorBlack, selectforeground=colorGray, normalbackground=colorWhite, normalforeground=colorBlack, othermonthbackground=colorGray, othermonthweforeground=colorBlack)
+        self.cal.place(x=20, y=130)
+        
+        #Responsible
+        Label(mainframe, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=340)
+        self.responsible = ttk.Combobox(mainframe, state = 'readonly', values = employers.ver('nombre'), foreground="#222222", background=colorGray)
+        self.responsible.place(x=20, y=370)
+        
+        #Comment
+        Label(mainframe, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=20, y=410)
+        self.comment = Text(mainframe, width=43, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=3)
+        self.comment.place(x=20, y=440)
+        
+        #Maintenances table
+        self.productsTable = crearTabla(['Fecha', 'Descripción'], [1,], [100,500], [['',''],], mainframe, 8, '' )
+        self.productsTable.place(x=400, y=100)
+        for maintenance in maintenances.getMaintenancesToWorkOrders():
+            self.productsTable.insert('', 0, id=maintenance.id, text=maintenance.date.strftime('%d/%m/%Y'), values=(maintenance.description,))
+            
+        #Add
+        Button(mainframe, text='Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.addMaintenanceToWorkOrder(workorder, maintenances.Maintenance(id = self.productsTable.focus()))).place(x=1050, y=100)
+        
+        #Maintenances in work order
+        self.maintenancesTable = crearTabla(['Fecha', 'Descripción'], [1,], [100,500], [['',''],], mainframe, 8, '' )
+        self.maintenancesTable.place(x=400, y=300)
+            
+        #Remove
+        Button(mainframe, text='Quitar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.removeMaintenanceFromWorkOrder(workorder, maintenances.Maintenance(id = self.maintenancesTable.focus()))).place(x=1050, y=300)
+        
+    def saveWorkOrder(self, workorder):
+        """_summary_
+
+        Args:
+            workorder (WorkOrder): _description_
+        """
+        workorder.date = datetime.combine(self.cal.selection_get(), datetime.min.time())
+        workorder.responsible = employers.Employer(id = employers.ver('id')[self.responsible.current()])
+        workorder.comment = self.comment.get('1.0', END)
+        workorder.save()
+        messagebox.showinfo(title='Orden de trabajo creada', message=f"La orden de trabajo se ha creado con el id {workorder.id}")
+        self.window.destroy()
+        self.displayWorkOrder(workorder.id)
+    
+    def addMaintenanceToWorkOrder(self, workorder, maintenance):
+        if not workorder.hasMaintenance(maintenance):
+            workorder.maintenances.append(maintenance)
+        self.updateWorkOrderMaintenancesTable(workorder, self.maintenancesTable)
+    
+    def removeMaintenanceFromWorkOrder(self, workorder, maintenance):
+        workorder.removeMaintenance(maintenance)
+        self.updateWorkOrderMaintenancesTable(workorder, self.maintenancesTable)
+    
+    def updateWorkOrderMaintenancesTable(self, workorder, table):
+        """_summary_
+
+        Args:
+            workorder (WorkOrder Class): _description_
+            table (_type_): _description_
+        """
+        table.delete(*table.get_children())
+        for maintenance in workorder.maintenances:
+            table.insert('', 0, id=maintenance.id, text=maintenance.date.strftime('%d/%m/%Y'), values=(maintenance.description,))
             
         
 if __name__ == '__main__':
