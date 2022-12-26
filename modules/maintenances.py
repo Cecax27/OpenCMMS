@@ -242,28 +242,15 @@ def nuevo(fecha, estado, responsable, comentario, tipo, tiempoProgramado, anteri
 def findPendingMaintenances(employerId = 0):
     """Find pending maintenances. If you give the employer id, it find pending maintenances for that employer"""
     if employerId != 0:
-        instruction = f"SELECT id FROM mantenimientos WHERE estado = '{Programmed}' AND responsable = {employerId}"
-        maintenancesList = []
-        for id in sql.peticion(instruction):
-            maintenancesList.append(Maintenance(id = id[0]))
-        return maintenancesList
+        return [Maintenance(id = x[0]) for x in sql.petition(f"SELECT id FROM mantenimientos WHERE estado = '{Programmed}' AND responsable = {employerId}")]
 
 def getMaintenancesToWorkOrders():
-    list = []
-    for id in sql.petition(f"SELECT id FROM mantenimientos WHERE estado='Programado' ORDER BY fecha DESC"):
-        list.append(Maintenance(id = id[0]))
-    return list
+    return [Maintenance(id = x[0]) for x in sql.petition("SELECT id FROM mantenimientos WHERE estado='Programado' ORDER BY fecha DESC")]
     
 def findOverdueMaintenances(employerId = 0):
     """Find overdue maintenances. If you give the employer id, it find pending maintenances for that employer"""
     if employerId != 0:
-        instruction = f"SELECT id FROM mantenimientos WHERE estado = '{Programmed}' AND responsable = {employerId}"
-        maintenancesList = []
-        for id in sql.peticion(instruction):
-            newMaintenance = Maintenance(id = id[0])
-            if newMaintenance.date <= datetime.now():
-                maintenancesList.append(newMaintenance)
-        return maintenancesList
+        return list(filter(lambda x: x.date <= datetime.now(),[Maintenance(id = x[0]) for x in sql.petition(f"SELECT id FROM mantenimientos WHERE estado = '{Programmed}' AND responsable = {employerId}")]))
 
 def findCorrectiveActivity(id):
     """Find the id of the activity corrective maintenance of a plant"""
@@ -322,25 +309,20 @@ def buscarTodos():
 def getMaintenanceDate(maintenance):
     return maintenance.date
 
-def getAll():
-    """Return all the maintenances in the database"""
-    instruction = "SELECT id FROM mantenimientos"
-    listIds = sql.peticion(instruction)
-    listMaintenances = []
-    for i in listIds:
-        listMaintenances.append(Maintenance(i[0]))
-    listMaintenances.sort(key=getMaintenanceDate, reverse=True)
-    return listMaintenances
+def getAll(limit = 0, order = 'date'):
+    """Return all the maintenances in the database. You can limit the search with limit argument.
+
+    Args:
+        limit (int, optional): The max quantity of maintenances. Defaults to 0 (No limit).
+
+    Returns:
+        list: A list with Maintenances objects
+    """
+    return [Maintenance(id = x[0]) for x in sql.petition(f"SELECT id FROM mantenimientos{' ORDER BY fecha DESC' if order == 'date' else ''}{' LIMIT '+str(limit) if limit != 0 else ''}")]
 
 def getProgrammed():
     """Return all maintenances in the database where status is Programmed"""
-    instruction = f"SELECT id FROM mantenimientos WHERE estado='{Programmed}'"
-    listIds = sql.peticion(instruction)
-    listMaintenances = []
-    for i in listIds:
-        listMaintenances.append(Maintenance(i[0]))
-    listMaintenances.sort(key=getMaintenanceDate)
-    return listMaintenances
+    return [Maintenance(id = x[0]) for x in sql.petition(f"SELECT id FROM mantenimientos WHERE estado = '{Programmed}' ORDER BY fecha ASC")]
 
 def eliminar(id):
     """Elimina un mantenimiento en la base de datos por su id"""

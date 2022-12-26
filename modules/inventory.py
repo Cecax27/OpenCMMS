@@ -82,7 +82,8 @@ class Product():
         self.brand = rawData[4]
         self.model = rawData[5]
         self.quantity = rawData[6]
-        self.recalculateQuantity()
+        #self.recalculateQuantity()
+        self.findMovements()
         return 1
     
     def recalculateQuantity(self):
@@ -119,7 +120,7 @@ class Product():
         newMovement.origin_id = origin_id if origin != None else None
         newMovement.save()
         self.movements.append(newMovement)
-        self.recalculateQuantity()
+        #self.recalculateQuantity()
         
     def save(self):
         if self.id == 0:
@@ -177,6 +178,7 @@ class Product():
         plt.show()
         
     def calculateOutputs(self):
+        self.findMovements()
         distances = []
         suma = timedelta()
         for mov in self.movements:
@@ -383,10 +385,7 @@ def getCategories():
     return list
 
 def findByName(name):
-    list = []
-    for id in sql.peticion(f"SELECT id FROM inventory WHERE name LIKE '%{name}%'"):
-        list.append(Product(id = id[0]))
-    return list
+    return [Product(id = x[0]) for x in sql.peticion(f"SELECT id FROM inventory WHERE name LIKE '%{name}%'")]
 
 def getProducts(order = 'name', quantity = 0):
     list = []

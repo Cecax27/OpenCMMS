@@ -37,7 +37,7 @@ colorDarkGray = '#dadada'
 colorWhite = "#ffffff"
 colorBlack = "#454545"
 
-#Funciones--------
+#Functios--------
 def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
     """Crea una tabla con un Treeview de Tkinter.
     Parámetros: matriz = matriz de la tabla,
@@ -52,7 +52,6 @@ def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
     if funcion != '':
         nuevaTabla.tag_bind("mytag", "<<TreeviewSelect>>", funcion)
         
-
     for x in encabezados:
         posicion = '#' + str(encabezados.index(x))
         nuevaTabla.heading(posicion, text=encabezados[encabezados.index(x)], anchor=CENTER)
@@ -71,9 +70,6 @@ def crearFuncion(id, objeto):
 
 def deleteActivityFromList(activity, objeto):
     return lambda:objeto.padre.objetoMantenimientos.eliminarActividadAsignada(activity)
-
-def getPlant(activity):
-    return activity.plant.department.name
 
 def clearMainFrame():
     global mainFrame
@@ -210,12 +206,8 @@ class Crm:
 
         self.mainframe = mainFrame
 
-        self.objetoMantenimientos.main()
-
     def actividades(self):
-        self.mainframe.destroy()
-        self.mainframe = Frame(self.root, relief=RIDGE, borderwidth=2)
-        self.mainframe.grid(column=0, row=1)
+        clearMainFrame()
 
         lblMain = Label(self.mainframe, text='Actividades')
         lblMain.grid(column=0, row=0)
@@ -1283,7 +1275,7 @@ class Mantenimientos(Crm):
         Button(mainFrame, text='Ver todos',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.allMaintenancesWindow).place(x=390, y=40)
 
         #Show all maintenances
-        lista = maintenances.getAll()[0:10]
+        lista = maintenances.getAll(limit = 10)
         allMaintenances = Frame(mainFrame, highlightthickness=0, bg="#ffffff")
         allMaintenances.place(x=10, y=90)
         canvas = Canvas(allMaintenances, bg="#ffffff", width=root.winfo_width()/2-70, height=root.winfo_height()-200, highlightthickness=0)
@@ -1962,7 +1954,7 @@ class Mantenimientos(Crm):
         newActivity = activities.Activity(id = self.tablaActividadesAsignadas.focus(), assigned= True)
         if newActivity not in self.newMaintenance.activities:
             self.newMaintenance.activities.append(newActivity)
-            self.newMaintenance.activities.sort(key=getPlant)
+            self.newMaintenance.activities.sort(key=lambda x: x.name)
 
         self.activitiesTable.clear()
         for activity in self.newMaintenance.activities:
@@ -2495,15 +2487,12 @@ class Inventory():
             frame = Frame(self.productsFrame.scrollableFrame)
             frame.config(width=300, height=200, bg=colorGray)
             frame.bind('<Button-1>', func_displayProduct(product.id, self))
-            self.productsFrame.scrollableFrame.update()
             frame.grid(column=productNumber%itemX, row=int(productNumber/itemX), pady=itemSeparation, padx=itemSeparation)
             title = Label(frame, text=product.name, bg=colorGray, fg='#444444',font=("Segoe UI", "10", "bold"), wraplength=180, justify=LEFT)
             title.place(x=10, y=10)
-            title.update()
             description = Label(frame, text=product.description, bg=colorGray, fg='#666666', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT)
-            description.place(x=10, y=10+title.winfo_height())
-            description.update()
-            Label(frame, text=(product.brand if product.brand != None else '')+(' - '+product.model if product.model != None else ''), bg=colorGray,fg='#555555', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT).place(x=10, y=20+description.winfo_height()+title.winfo_height())
+            description.place(x=10, y=50)
+            Label(frame, text=(product.brand if product.brand != None else '')+(' - '+product.model if product.model != None else ''), bg=colorGray,fg='#555555', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT).place(x=10, y=100)
             Label(frame, text=str(product.quantity)+ ' disponible', bg=colorGray,fg=colorRed if product.quantity==0 else colorGreen, font=("Segoe UI", "10", "normal")).place(x=10, y=200-30)
             
     def displayProduct(self, id):
@@ -3243,4 +3232,5 @@ class WorkOrders:
 if __name__ == '__main__':
     sql.checkDatabase()
     aplicacion = Crm()
+    #aplicacion.objetoMantenimientos.statistics()
     root.mainloop()
