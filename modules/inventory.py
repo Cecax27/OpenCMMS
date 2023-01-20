@@ -82,8 +82,6 @@ class Product():
         self.brand = rawData[4]
         self.model = rawData[5]
         self.quantity = rawData[6]
-        #self.recalculateQuantity()
-        self.findMovements()
         return 1
     
     def recalculateQuantity(self):
@@ -100,13 +98,7 @@ class Product():
         if self.id == 0:
             print('Error. The product has not id.')
             return 0
-        self.movements = []
-        rawData = sql.peticiontres(f"SELECT id FROM inventory_detail WHERE product_id = {self.id} ORDER BY date")
-        if len(rawData) == 0:
-            #print('No movements found.')
-            return 0
-        for movement in rawData:
-            self.movements.append(InventoryMovement(id = movement[0]))
+        self.movements = [InventoryMovement(id = x[0]) for x in sql.petition(f"SELECT id FROM inventory_detail WHERE product_id = {self.id} ORDER BY date DESC")]
         return 1
 
     def addMovement(self, date, type, quantity, comment, origin, origin_id):
@@ -119,8 +111,7 @@ class Product():
         newMovement.origin = origin
         newMovement.origin_id = origin_id if origin != None else None
         newMovement.save()
-        self.movements.append(newMovement)
-        #self.recalculateQuantity()
+        self.recalculateQuantity()
         
     def save(self):
         if self.id == 0:
@@ -144,11 +135,11 @@ class Product():
     def graphMovements(self):
         time = []
         quantity = []
-        time.append(self.movements[0].date-timedelta(days=10))
+        time.append(self.movements[len(self.movements)-1].date-timedelta(days=10))
         quantity.append(0)
         purchasesTimes = []
         purchasesQuantity = []
-        for mov in self.movements:
+        for mov in reversed(self.movements):
             time.append(mov.date)
             if len(quantity) == 1:
                 quantity.append(mov.quantity)
@@ -165,13 +156,13 @@ class Product():
         ax.set_ylabel('Cantidad')
         ax.grid(True, color="#cccccc", linestyle='dashed')
         ax.plot(time, quantity, label='Cantidad de productos', color='#475CA7',drawstyle='steps-post', linewidth=2)
-        time = [datetime.now()]
-        quantity = [quantity[len(quantity)-1]]
+        time = [datetime.now(), datetime.now()+self.calculateOutputs()]
+        quantity = [quantity[len(quantity)-1], quantity[len(quantity)-1]]
         while quantity[len(quantity)-1] != 0:
             time.append(time[len(time)-1]+self.calculateOutputs())
             quantity.append(quantity[len(quantity)-1]-1)
         ax.plot(time, quantity, label='Proyección', color='#916AAD',drawstyle='steps', linewidth=2, linestyle='dotted')
-        ax.plot(purchasesTimes, purchasesQuantity, label='Compras', color='#475CA7', marker='o', linewidth=2)
+        ax.plot(purchasesTimes, purchasesQuantity, label='Compras', color='#475CA7', marker='o', linewidth=0)
         ax.legend()
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%b'))
         
@@ -388,10 +379,7 @@ def findByName(name):
     return [Product(id = x[0]) for x in sql.peticion(f"SELECT id FROM inventory WHERE name LIKE '%{name}%'")]
 
 def getProducts(order = 'name', quantity = 0):
-    list = []
-    for id in sql.peticion(f"SELECT id FROM inventory ORDER BY {order} {'' if quantity == 0 else 'LIMIT '+str(quantity)}"):
-        list.append(Product(id = id[0]))
-    return list
+    return [Product(id = x[0]) for x in sql.peticion(f"SELECT id FROM inventory ORDER BY {order} {'' if quantity == 0 else 'LIMIT '+str(quantity)}")]
 
 def getRequisitions(lastest = True, quantity = 0, order = 'id'):
     list = []
@@ -416,7 +404,7 @@ def crearRequisiion():
     
 if __name__ == '__main__':
     #checkDatabase()
-    product = Product(id=39)
-    print(product.calculateOutputs()*product.quantity)
-    print(product.buy())
-    product.graphMovements()
+    product = Product(id=1)
+    product.recalculateQuantity()
+else:
+    map(lambda x: x.recalculateQuantity, getProducts())

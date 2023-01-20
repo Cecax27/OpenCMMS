@@ -392,10 +392,6 @@ class BarraMenu(Crm):
         menuEquipos = Menu(self.menubar, tearoff=0)
         menuEquipos.add_command(label='Crear equipo', 
             command= lambda:padre.objetoEquipos.nuevo())
-        menuEquipos.add_command(label='Editar equipo', 
-            command= lambda:padre.objetoEquipos.editar())
-        menuEquipos.add_command(label='Eliminar equipo', 
-            command= lambda:padre.objetoEquipos.eliminar())
 
         #Menú actividades---------------------
         menuActividades = Menu(self.menubar, tearoff=0)
@@ -493,7 +489,6 @@ class Departamentos():
 
         frameBotones = Frame(self.frameEditar)
         frameBotones.grid(column=0, row=3, columnspan=2)
-        help(Button)
         Button(frameBotones, text='Guardar', command= self.guardar).grid(column=0, row=3,pady=5, padx=5, sticky='w e')
         Button(frameBotones, text='Cancelar', command=self.ventana.destroy).grid(column=1, row=3,pady=5, padx=5, sticky='w e') 
 
@@ -503,13 +498,13 @@ class Departamentos():
         resultado = areas.buscarDepartamento(text) 
         #print(resultado)
         self.nombre.delete(0, "end")
-        self.nombre.insert(0, resultado[0][1])
+        self.nombre.insert(0, resultado[1])
 
     def guardar(self):
         id = self.tabla.focus()
         text = self.tabla.item(id, option='text')
         resultado = areas.buscarDepartamento(text) 
-        areas.modificarDepartamento(resultado[0][0], self.nombre.get())
+        areas.modificarDepartamento(resultado[0], self.nombre.get())
         texto = "El departamento "+self.nombre.get()+" se ha modificado exitosamente."
         messagebox.showinfo(title='Departamento modificado', message=texto)
         self.ventana.destroy()
@@ -952,7 +947,7 @@ class Equipos(Crm):
         if text == None:
             text = 'No se ha hecho ninguno'
         else:
-            text = text[1]
+            text = text.date.strftime('%d/%m/%Y')
         Label(self.info, text=text, fg='#666666', bg=colorGray, font=("Segoe UI", "9", "bold")).place(x=140, y=80)
 
         #Ultimo mantenimiento programado
@@ -2203,18 +2198,19 @@ class Mantenimientos(Crm):
         graph.place(x=20, y=200)
         fig = Figure(figsize=(5,4), dpi=100)
         plot1 = fig.add_subplot(211)
-        rawData = sql.petition("SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE strftime('%Y',fecha)='2022' AND tipo='Correctivo' GROUP BY strftime('%m',fecha)")
-        plot1.set_title("Mantenimientos correctivos por mes en 2022")
+        rawData = sql.petition("SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE tipo='Correctivo' GROUP BY strftime('%Y',fecha), strftime('%m',fecha) ORDER BY fecha")
+        plot1.set_title("Mantenimientos correctivos por mes")
         plot1.set_xlabel('Mes')
         plot1.set_ylabel('Mantenimientos')
         plot1.bar([row[0] for row in rawData],[row[1] for row in rawData], color='#93C2E4')
         
         plot2 = fig.add_subplot(212)
-        rawData = sql.petition("SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE strftime('%Y',fecha)='2022' AND tipo='Preventivo' GROUP BY strftime('%m',fecha)")
-        plot2.set_title("Mantenimientos preventivos por mes en 2022")
+        rawData = sql.petition("SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE tipo='Preventivo' GROUP BY strftime('%Y',fecha), strftime('%m',fecha) ORDER BY fecha")
+        plot2.set_title("Mantenimientos preventivos por mes")
         plot2.set_xlabel('Mes')
         plot2.set_ylabel('Mantenimientos')
         plot2.bar([row[0] for row in rawData],[row[1] for row in rawData], color='#93C2E4')
+        fig.subplots_adjust(hspace=0.6)
         
         canvas = FigureCanvasTkAgg(fig, master=graph)
         canvas.draw()
@@ -2357,7 +2353,7 @@ class Empleados():
         
         #Tittle
         Label(mainFrame, text='Estadísticas de', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
-        Label(mainFrame, text=f"empleado id {employer.id}", bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
+        Label(mainFrame, text=employer.name, bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
         
         #InfoFrame
         info = Frame(mainFrame, width=600, height=500, bg=colorWhite)
@@ -2377,7 +2373,7 @@ class Empleados():
         graph.place(x=20, y=200)
         fig = Figure(figsize=(5,4), dpi=100)
         plot1 = fig.add_subplot(211)
-        rawData = sql.petition(f"SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE strftime('%Y',fecha)='2022' AND tipo='Correctivo' AND responsable = {employer.id} GROUP BY strftime('%m',fecha)")
+        rawData = sql.petition(f"SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE tipo='Correctivo' AND responsable = {employer.id} GROUP BY strftime('%Y',fecha), strftime('%m',fecha) ORDER BY fecha")
         plot1.set_title("Mantenimientos correctivos por mes en 2022")
         plot1.set_xlabel('Mes')
         plot1.set_ylabel('Mantenimientos')
@@ -2389,6 +2385,7 @@ class Empleados():
         plot2.set_xlabel('Mes')
         plot2.set_ylabel('Mantenimientos')
         plot2.bar([row[0] for row in rawData],[row[1] for row in rawData], color='#93C2E4')
+        fig.subplots_adjust(hspace=0.6)
         
         canvas = FigureCanvasTkAgg(fig, master=graph)
         canvas.draw()
@@ -2643,7 +2640,7 @@ class Inventory():
         clearMainFrame()
         
         Label(mainFrame, text='Requisiciones', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
-        requisitionsList = inventory.getRequisitions(quantity=15, order='date')
+        requisitionsList = inventory.getRequisitions(quantity=40, order='date')
         
         #New
         Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newRequisition).place(x=root.winfo_width()-100, y=20)
@@ -2728,7 +2725,8 @@ class Inventory():
             name = Label(productFrame, text=product.product.name, fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=450, justify='left')
             name.place(x=10, y=10)
             name.update()
-            Label(productFrame, text=str(product.quantity), fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='left').place(x=1030, y=10)
+            Label(productFrame, text=str(product.quantity), fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='center').place(x=1030, y=10)
+            Label(productFrame, text=str(product.deliveredQuantity), fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='center').place(x=1180, y=10)
             Label(productFrame, text=product.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=1000, justify='left').place(x=10, y=35)
             productFrame.update()
             

@@ -83,7 +83,6 @@ class Maintenance:
         else: #If isnt a new maintenance
             editar(self.id, self.date, self.status, self.responsible, self.description, self.type, self.repeat, self.previous, self.next)
             print(f"Maintenance with ID {self.id} was updated")
-            return 0
         if self.type == Corrective:
             for plant in self.plants:
                 if findCorrectiveActivity(plant.id):
