@@ -293,7 +293,7 @@ class Requisition():
         
 class RequisitionDetail():
     
-    def __init__(self, productId = 0, quantity = 0, id = None, comment = None, status = STATUS_DRAFT, requisitionId = 0, deliveredQuantity = 0, deliveredDate = None) -> None:
+    def __init__(self, productId = 0, quantity = 0, id = None, comment = None, status = STATUS_DRAFT, requisitionId = 0, deliveredQuantity = None, deliveredDate = None) -> None:
         if id != None:
             self.id = id
             self.findById(self.id)

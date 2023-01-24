@@ -391,7 +391,7 @@ def buscarPorEquipo(id):
     mantList.sort(key= lambda plant: plant.date, reverse= True)
     return mantList
 
-def find(overdue = False, employerId = 0, status = None):
+def find(overdue = False, employerId = 0, status = None, order = None):
     """Find all the maintenances with an employer id"""
     instruction = f"SELECT id FROM mantenimientos WHERE"
     restrictionList = []
@@ -399,19 +399,17 @@ def find(overdue = False, employerId = 0, status = None):
         restrictionList.append(f" responsable = {employerId} ")
     if status != None:
         restrictionList.append(f" estado = '{status}' ")
+    if overdue:
+        restrictionList.append(f" fecha < '{datetime.now()}'")
+        restrictionList.append(f" estado = 'Programado' ")
     for restriction in restrictionList:
         instruction += restriction
         if restrictionList.index(restriction) != len(restrictionList)-1:
             instruction += "AND"
-    maintenancesList = []
-    for id in sql.peticion(instruction):
-        newMaintenance = Maintenance(id = id[0])
-        if overdue:
-            if newMaintenance.date <= datetime.date(datetime.now()):
-                maintenancesList.append(newMaintenance)
-        else:
-            maintenancesList.append(newMaintenance)
-    return maintenancesList
+    if order:
+        instruction += f"ORDER BY {order}"
+
+    return [Maintenance(id = id[0]) for id in sql.petition(instruction)]
         
     
 

@@ -17,6 +17,7 @@ from datetime import datetime
 from datetime import date
 from datetime import timedelta
 from modules.ui.scrollableFrame import *
+from modules.ui import resources
 from modules import inventory
 from modules import sql
 from modules import workorders
@@ -32,10 +33,13 @@ import numpy as np
 colorGreen = '#37c842'
 colorRed = '#c83737'
 colorBlue = '#37abc8'
-colorGray = '#f2f2f2'
+colorGray = '#e6e6e6'
 colorDarkGray = '#dadada'
 colorWhite = "#ffffff"
 colorBlack = "#454545"
+colorBackground = "#f2f2f2"
+
+previousWindow = None
 
 #Functios--------
 def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
@@ -65,9 +69,6 @@ def crearTabla(encabezados, ids, anchos, matriz, lugar, altura, funcion):
 
     return nuevaTabla
 
-def crearFuncion(id, objeto):
-    return lambda:objeto.padre.objetoMantenimientos.displayMaintenance(id)
-
 def deleteActivityFromList(activity, objeto):
     return lambda:objeto.padre.objetoMantenimientos.eliminarActividadAsignada(activity)
 
@@ -79,17 +80,35 @@ def clearMainFrame():
     global imgPreventive
     global imgIn
     global imgOut
+    global imgDate
+    global imgPerson
+    global imgDescription
+    global imgMaintenance
+    global imgPlant
+    global imgPreventive2
+    global imgRepeat
+    global imgTask
+    global imgStatus
     imgCorrective = PhotoImage(file='img/corrective.png').subsample(8)
     imgPreventive = PhotoImage(file='img/preventive.png').subsample(8)
     imgIn = PhotoImage(file='img/in.png')
     imgOut = PhotoImage(file='img/out.png')
-    
+    imgDate = PhotoImage(file='img/date.png').subsample(3)
+    imgPerson = PhotoImage(file="img/person.png").subsample(3)
+    imgDescription = PhotoImage(file="img/description.png").subsample(3)
+    imgMaintenance = PhotoImage(file="img/maintenance.png").subsample(3)
+    imgPlant = PhotoImage(file="img/plant.png").subsample(3)
+    imgPreventive2 = PhotoImage(file="img/preventive_2.png").subsample(3)
+    imgRepeat = PhotoImage(file="img/repeat.png").subsample(3)
+    imgTask = PhotoImage(file="img/task.png").subsample(3)
+    imgStatus = PhotoImage(file="img/status.png").subsample(3)
+  
     mainFrame.destroy()
     mainFrame = Frame(root)
-    mainFrame.config(bg="#ffffff",
-        width=root.winfo_width(),
-        height=root.winfo_height()-50)
-    mainFrame.grid(column=0, row=1)
+    mainFrame.config(bg=colorBackground,
+        width=root.winfo_width()*0.89,
+        height=root.winfo_height())
+    mainFrame.grid(column=1, row=0)
 
 class Crm:
 
@@ -112,91 +131,12 @@ class Crm:
         self.workorders = WorkOrders(self)
 
         #Menu---------------------
-        root.update()
-        global menuFrame
-        menuFrame = Frame(root)
-        menuFrame.config(width=root.winfo_width(), height=50, bg="#37abc8")
-        menuFrame.grid(column=0, row=0)
+        self.menu = resources.Menu(root, backgroundColor="#666666") 
 
-        colorButton = "#37abc8"
-
-        Button(menuFrame, 
-            text='Mantenimientos',
-            font=("Segoe UI", "11", "normal"),
-            bg=colorButton,
-            fg="#ffffff",
-            bd=0,
-            highlightthickness=0,
-            width=12,
-            borderwidth=5,
-            relief=FLAT,
-            command=self.objetoMantenimientos.main
-            ).place(x=0.25*root.winfo_width()/6, y=4)
-
-        Button(menuFrame, 
-            text='Equipos',
-            font=("Segoe UI", "11", "normal"),
-            bg=colorButton,
-            fg="#ffffff",
-            bd=0,
-            highlightthickness=0,
-            width=12,
-            borderwidth=5,
-            relief=FLAT,
-            command=self.objetoEquipos.main
-            ).place(x=1.25*root.winfo_width()/6, y=4)
-
-        Button(menuFrame, 
-            text='Inventario',
-            font=("Segoe UI", "11", "normal"),
-            bg=colorButton,
-            fg="#ffffff",
-            bd=0,
-            highlightthickness=0,
-            width=12,
-            borderwidth=5,
-            relief=FLAT,
-            command=self.inventory.inventoryMainWindow
-            ).place(x=2.25*root.winfo_width()/6, y=4)
-
-        Button(menuFrame, 
-            text='Ordenes de trabajo',
-            font=("Segoe UI", "11", "normal"),
-            bg=colorButton,
-            fg="#ffffff",
-            bd=0,
-            highlightthickness=0,
-            width=18,
-            borderwidth=5,
-            relief=FLAT,
-            command=self.workorders.mainWindow
-            ).place(x=3.25*root.winfo_width()/6, y=4)
-
-        Button(menuFrame, 
-            text='Requisiciones',
-            font=("Segoe UI", "11", "normal"),
-            bg=colorButton,
-            fg="#ffffff",
-            bd=0,
-            highlightthickness=0,
-            width=12,
-            borderwidth=5,
-            relief=FLAT,
-            command=self.inventory.requisitionsMainWindow
-            ).place(x=4.25*root.winfo_width()/6, y=4)
-
-        Button(menuFrame, 
-            text='Empleados',
-            font=("Segoe UI", "11", "normal"),
-            bg=colorButton,
-            fg="#ffffff",
-            bd=0,
-            highlightthickness=0,
-            width=12,
-            borderwidth=5,
-            relief=FLAT,
-            command=self.objetoEmpleados.main
-            ).place(x=5.25*root.winfo_width()/6, y=4)
+        self.menu.addButton("Mantenimientos", self.objetoMantenimientos.maintenancesMainWindow)
+        self.menu.addButton("Equipos", self.objetoEquipos.main)
+        self.menu.addButton("Inventario", self.inventory.inventoryMainWindow)
+        self.menu.addButton("Empleados", self.objetoEmpleados.employersMainWindow)
 
         global barraMenu
         barraMenu = BarraMenu(self)
@@ -205,6 +145,7 @@ class Crm:
         mainFrame = Frame(self.root)
 
         self.mainframe = mainFrame
+        clearMainFrame()
 
     def actividades(self):
         clearMainFrame()
@@ -852,7 +793,7 @@ class Equipos(Crm):
             Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorDarkGray, font=("Segoe UI", "8", "bold")).place(x=10, y=60)
             Label(mant, text=i.description, fg='#333333', bg=colorDarkGray, font=("Segoe UI", "8", "normal"), wraplength=230, justify='left').place(x=10, y=80)
             #Botón
-            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self)).place(x=180, y=200)
+            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command= func_displayMaintenance(i.id, self)).place(x=180, y=200)
 
         mantFrame.pack(side="top", fill="both", expand=True, padx=2, pady=2)
         v.pack(side="bottom", fill="x")
@@ -988,7 +929,7 @@ class Equipos(Crm):
             Label(mant, text='Matenimiento '+i[5], fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=10, y=60)
             Label(mant, text=i[4], fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=230, justify='left').place(x=10, y=80)
             #Botón
-            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i[0], self)).place(x=180, y=200)
+            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command= func_displayMaintenance(i[0], self, lambda: self.editar(idEquipo))).place(x=180, y=200)
 
         v.config(command=mantFrame.xview)
 
@@ -1244,8 +1185,10 @@ class Actividades():
             messagebox.showinfo(title='Actividad eliminada', message=texto)
         self.ventana.destroy()
 
-def func_displayMaintenance(id, object):
-    return lambda event: object.parent.objetoMantenimientos.displayMaintenance(id) 
+def func_displayMaintenance(id, object, previous = None):
+    global previousWindow
+    previousWindow = previous
+    return lambda event = None: object.parent.objetoMantenimientos.displayMaintenance(id) 
 
 class Mantenimientos(Crm):
     def __init__(self, padre):
@@ -1253,89 +1196,60 @@ class Mantenimientos(Crm):
         self.parent = padre
         global mainFrame
         
-    def main(self):
+    def maintenancesMainWindow(self):
         global mainFrame
         global root
         
         clearMainFrame()
+        resources.AddTittle(mainFrame, "Matenimientos")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Ordenes de trabajo", self.parent.workorders.workOrdersMainWindow)
+        menu.addButton("+ Mantenimiento preventivo", self.nuevo, colorGreen)
+        menu.addButton("+ Mantenimiento correctivo", self.newCorrective, colorGreen)
+        menu.addButton("Ver todos", self.allMaintenancesWindow)
+        menu.addButton("Estadísticas", self.statistics)
 
-        #Title
-        Label(mainFrame, text='Mantenimientos', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
-
-        #Buttons
-        Button(mainFrame, text='+ Mantenimiento preventivo',font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.nuevo).place(x=10, y=40)
-
-        Button(mainFrame, text='+ Mantenimiento correctivo',font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.newCorrective).place(x=200, y=40)
+        """ mant = Frame(scrollable_frame)
+        mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
+        mant.pack(pady=10, padx=15)
+        #Tittle
+        Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=45, y=10)
+        #Date
+        Label(mant, text=i.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=45, y=30)
+        #Status
+        if i.status == 'Realizado' or i.status == 'Realizado Programado':
+            color = colorGreen
+        elif i.status == 'Programado':
+            color = colorBlue
+        elif i.status == 'Cancelado':
+            color = colorRed
+        Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
+        #type
+        if i.type == maintenances.Corrective:
+            Label(mant, image = imgCorrective, bd=0, width=25, height=25).place(x=10, y=15)
+        elif i.type == maintenances.Preventive:
+            Label(mant, image = imgPreventive, bd=0, width=25, height=25).place(x=10, y=15)
+        else:
+            Label(mant, image = imgCorrective, bd=0, width=25, height=25).place(x=10, y=15)
+        Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=185, y=30)
         
-        Button(mainFrame, text='Ver todos',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=self.allMaintenancesWindow).place(x=390, y=40)
-
-        #Show all maintenances
-        lista = maintenances.getAll(limit = 10)
-        allMaintenances = Frame(mainFrame, highlightthickness=0, bg="#ffffff")
-        allMaintenances.place(x=10, y=90)
-        canvas = Canvas(allMaintenances, bg="#ffffff", width=root.winfo_width()/2-70, height=root.winfo_height()-200, highlightthickness=0)
-        scrollbar = Scrollbar(allMaintenances, orient='vertical', command=canvas.yview)
-        scrollable_frame = Frame(canvas, bg="#ffffff")
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        for i in lista:
-            mant = Frame(scrollable_frame)
-            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
-            mant.pack(pady=10, padx=15)
-            #Tittle
-            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=45, y=10)
-            #Date
-            Label(mant, text=i.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=45, y=30)
-            #Status
-            if i.status == 'Realizado' or i.status == 'Realizado Programado':
-                color = colorGreen
-            elif i.status == 'Programado':
-                color = colorBlue
-            elif i.status == 'Cancelado':
-                color = colorRed
-            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
-            #type
-            if i.type == maintenances.Corrective:
-                Label(mant, image = imgCorrective, bd=0, width=25, height=25).place(x=10, y=15)
-            elif i.type == maintenances.Preventive:
-                Label(mant, image = imgPreventive, bd=0, width=25, height=25).place(x=10, y=15)
-            else:
-                Label(mant, image = imgCorrective, bd=0, width=25, height=25).place(x=10, y=15)
-            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=185, y=30)
-            
-            #Descripción
-            Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
-            #Botón
-            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self)).place(x=root.winfo_width()/2-170, y=60)
-
-        canvas.pack(side="left", fill="both", expand=True, padx=2, pady=2)
-        scrollbar.pack(side="right", fill="y")
+        #Descripción
+        Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50) """
 
         #Programmed maintenances
-        Label(mainFrame, text='Mantenimientos programado', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=root.winfo_width()/2, y=60)
+        Label(mainFrame, text='Mantenimientos atrasados', bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=180)
         
-        lista = maintenances.getProgrammed()
+        lista = maintenances.find(overdue=True)
         
-        programmedMaintenances = Frame(mainFrame, highlightthickness=0, bg="#ffffff")
-        programmedMaintenances.place(x=root.winfo_width()/2, y=90)
-        canvasprogrammedMaintenances = Canvas(programmedMaintenances, bg="#ffffff", width=root.winfo_width()/2-70, height=root.winfo_height()-200, highlightthickness=0)
-        scrollbarprogrammedMaintenances = Scrollbar(programmedMaintenances, orient='vertical', command=canvasprogrammedMaintenances.yview)
-        scrollable_frameprogrammedMaintenances = Frame(canvasprogrammedMaintenances, bg="#ffffff")
-        scrollable_frameprogrammedMaintenances.bind("<Configure>", lambda e: canvasprogrammedMaintenances.configure(scrollregion=canvasprogrammedMaintenances.bbox("all")))
-        canvasprogrammedMaintenances.create_window((0, 0), window=scrollable_frameprogrammedMaintenances, anchor='nw')
-        canvasprogrammedMaintenances.configure(yscrollcommand=scrollbarprogrammedMaintenances.set)
+        overdueMaintenancesFrame = ScrollableFrame(mainFrame, width = mainFrame.winfo_width()-40, height = mainFrame.winfo_height()-230, bg=colorBackground, x=20, y=210)
+        overdueMaintenancesFrame.place(x=20, y=210)
 
         for i in lista:
-            mant = Frame(scrollable_frameprogrammedMaintenances)
-            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
+            mant = Frame(overdueMaintenancesFrame.scrollableFrame)
+            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=mainFrame.winfo_width()-60, height=100)
+            mant.bind('<Button-1>', func_displayMaintenance(i.id, self, self.maintenancesMainWindow))
             mant.pack(pady=10, padx=15)
-            if i.date < datetime.now():
-                actualColor = colorRed
-            else:
-                actualColor = colorGreen
-            Frame(mant, bg=actualColor, height=100, width=3).place(x=0, y=0)
+            Frame(mant, bg=colorRed, height=100, width=3).place(x=0, y=0)
             #Titular
             Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
             #Date
@@ -1347,16 +1261,11 @@ class Mantenimientos(Crm):
                 color = colorBlue
             elif i.status == 'Cancelado':
                 color = colorRed
-            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
+            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=mainFrame.winfo_width()-255, y=10)
             #type
             Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=140, y=30)
             #Descripción
             Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
-            #Botón
-            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(i.id, self)).place(x=root.winfo_width()/2-170, y=60)
-
-        canvasprogrammedMaintenances.pack(side="left", fill="both", expand=True, padx=2, pady=2)
-        scrollbarprogrammedMaintenances.pack(side="right", fill="y")
 
     def allMaintenancesWindow(self):
         global mainFrame
@@ -1378,7 +1287,7 @@ class Mantenimientos(Crm):
             backColor = colorGray if reqNumber%2==0 else colorWhite
             frame = Frame(maintenancesFrame.scrollableFrame)
             frame.config(width=root.winfo_width()-80, height=30, bg=backColor)
-            frame.bind('<Button-1>', func_displayMaintenance(maint.id, self))
+            frame.bind('<Button-1>', func_displayMaintenance(maint.id, self, self.allMaintenancesWindow))
             frame.pack(pady=1)
             Label(frame, text=maint.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
             Label(frame, text=datetime.date(maint.date).strftime("%d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
@@ -2047,65 +1956,47 @@ class Mantenimientos(Crm):
         if messagebox.askyesno(title='Eliminar', message='¿En verdad desea eliminar el mantenimiento?'):
             maintenance.delete()
             messagebox.showinfo(title='Eliminado', message='El registro fue eliminado correctamente.')
-            self.main()
+            self.maintenancesMainWindow()
 
     def displayMaintenance(self, id):
         global mainFrame
         global root
-        mainFrame.destroy()
-        mainFrame = Frame(root)
-        mainFrame.config(bg="#ffffff",
-        width=root.winfo_width(),
-        height=root.winfo_height()-50)
-        mainFrame.grid(column=0, row=1)
+        global previousWindow
+        clearMainFrame()
 
+        global imgDate
+        global imgPerson
+        global imgDescription
+        global imgMaintenance
+        global imgPlant
+        global imgPreventive2
+        global imgRepeat
+        global imgTask
+        
         sel = maintenances.Maintenance(id = id)
-
-        Label(mainFrame, 
-            text='Mantenimiento ID '+str(sel.id),
-            bg="#ffffff",
-            font=("Segoe UI", "11", "bold")).place(x=10, y=10)
-
-        self.info = Frame(mainFrame)
-        self.info.config(bg="#ffffff", width=root.winfo_width()*0.2, height=root.winfo_height()-50)
-        self.info.place(x=10, y=50)
+        resources.AddTittle(mainFrame, f"Mantenimiento {sel.type}", f"ID {sel.id}")
+        
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", previousWindow, "#555555")
+        menu.addButton("Editar", lambda: self.editPreventiveWindow(sel) if sel.type == maintenances.Preventive else lambda: self.editCorrectiveWindow(sel))
+        if sel.status == 'Programado':
+            menu.addButton("Realizar", lambda: self.realizarMantenimiento(id))
+        if sel.status == maintenances.Done and sel.next == None and sel.type == 'Preventivo':
+            menu.addButton("Programar", lambda: self.programar(id))
+        if sel.status != maintenances.Cancelled:
+            menu.addButton("Cancelar", lambda: self.cancelarMantenimiento(sel), colorRed)
+        if sel.status == maintenances.Cancelled:
+            menu.addButton("Eliminar", lambda: self.eliminarMantenimiento(sel), colorRed)
+        menu.addButton("Orden de trabajo", lambda: self.maintenanceToWorkOrder(sel), colorGreen)
 
         #Label fecha y estado de mantenimiento
-        if sel.status == 'Programado': 
-            text = ' para el '
-        elif sel.status == 'Realizado': 
-            text = ' el '
-        else:
-            text = ' el '
-        Label(self.info, text=sel.status+text+sel.date.strftime('%d/%m/%Y'),fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=0)
-        #Label responsable
-        Label(self.info, text='Asignado a '+employers.buscar(sel.responsible)[2],fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=30)
-        #Label Tipo de mantenimiento
-        Label(self.info, text='Mantenimiento '+sel.type,fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=60)
+        info = resources.sectionInfo(mainFrame)
+        info.addData("", sel.date.strftime('%d/%m/%Y'), imgDate)
+        info.addData("", employers.buscar(sel.responsible)[2], imgPerson)
+        info.addData("", 'Mantenimiento '+sel.type, imgMaintenance)
         if sel.type == 'Preventivo':
-            Label(self.info, text='Repetir cada '+str(sel.repeat)+' días',fg='#666666', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=0, y=90)
-        #Label descripción mantenimiento
-        Label(self.info, text=sel.description, bg="#ffffff", font=("Segoe UI", "10", "normal"), wraplength=root.winfo_width()*0.18, justify='left').place(x=0, y=120)
-        #Edit Button
-        if sel.type == maintenances.Preventive:
-            Button(self.info, text='Editar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.editPreventiveWindow(sel)).place(x=0, y=root.winfo_height()-200)
-        if sel.type == maintenances.Corrective:
-            Button(self.info, text='Editar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.editCorrectiveWindow(sel)).place(x=0, y=root.winfo_height()-200)    
-        #Boton realizar
-        if sel.status == 'Programado':
-            Button(self.info, text='Realizar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.realizarMantenimiento(id)).place(x=0, y=root.winfo_height()-150)
-        #Boton Programar
-        if sel.status == maintenances.Done and sel.next == None and sel.type == 'Preventivo':
-            Button(self.info, text='Programar', font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.programar(id)).place(x=0, y=root.winfo_height()-150)
-        #Boton cancelar
-        if sel.status != maintenances.Cancelled:
-            Button(self.info, text='Cancelar', font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.cancelarMantenimiento(sel)).place(x=70, y=root.winfo_height()-150)
-        #Delete Button
-        if sel.status == maintenances.Cancelled:
-            Button(self.info, text='Eliminar', font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.eliminarMantenimiento(sel)).place(x=0, y=root.winfo_height()-150)
-            
-        #WorkOrder Button
-        Button(self.info, text='Orden de trabajo', font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.maintenanceToWorkOrder(sel)).place(x=140, y=root.winfo_height()-150)
+            info.addData("", str(sel.repeat)+' días', imgRepeat)
+        info.addData("", sel.description, imgDescription)        
 
         if sel.type == maintenances.Preventive:
             listActivities = []            
@@ -2125,37 +2016,37 @@ class Mantenimientos(Crm):
 
             for plant in listActivities:
                 framePlant = Frame(mainFrame)
-                framePlant.config(bg="#f2f2f2",
+                framePlant.config(bg=colorBackground,
                     width=250,
                     height=root.winfo_height()-50)
-                framePlant.place(x=root.winfo_width()*0.2+listActivities.index(plant)*250, y=0)
+                framePlant.place(x=listActivities.index(plant)*250+15, y=220)
                 thisPlant = plants.buscar(plant[0].plant.id)
                 area = areas.Area(thisPlant[3])
                 #Department
-                Label(framePlant, text=area.department.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
+                Label(framePlant, text=area.department.name, fg='#666666', bg=colorBackground, font=("Segoe UI", "9", "normal")).place(x=10, y=10)
                 #Area
-                Label(framePlant, text=area.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(area.department.name*10), y=10)
+                Label(framePlant, text=area.name, fg='#666666', bg=colorBackground, font=("Segoe UI", "9", "bold")).place(x=10+len(area.department.name*10), y=10)
                 #Plant
-                Label(framePlant, text=thisPlant[1], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=10, y=40)
+                Label(framePlant, text=thisPlant[1], fg='#000000', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=10, y=40)
                 #Description
-                Label(framePlant, text=thisPlant[2], fg='#000000', bg="#f2f2f2", font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
+                Label(framePlant, text=thisPlant[2], fg='#000000', bg=colorBackground, font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
                 for activity in plant:
                     #Label nombre actividad
-                    Label(framePlant, text=activity.name, fg='#111111', bg="#f2f2f2", font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=110+plant.index(activity)*60)
+                    Label(framePlant, text=activity.name, fg='#111111', bg=colorBackground, font=("Segoe UI", "8", "bold"), wraplength=180, justify='left').place(x=10, y=110+plant.index(activity)*60)
                     #Label descripcion actividad
-                    Label(framePlant, text=activity.description, fg='#111111', bg="#f2f2f2", font=("Segoe UI", "8", "normal"), wraplength=180, justify='left').place(x=10, y=130+plant.index(activity)*60)
+                    Label(framePlant, text=activity.description, fg='#111111', bg=colorBackground, font=("Segoe UI", "8", "normal"), wraplength=180, justify='left').place(x=10, y=130+plant.index(activity)*60)
         else:
             for plant in sel.plants:
                 framePlant = Frame(mainFrame)
-                framePlant.config(bg="#f2f2f2",
+                framePlant.config(bg=colorBackground,
                     width=250,
                     height=root.winfo_height()-50)
                 framePlant.place(x=root.winfo_width()*0.2+sel.plants.index(plant)*250, y=0)
                 
-                Label(framePlant, text=plant.department.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "normal")).place(x=10, y=10)
-                Label(framePlant, text=plant.area.name, fg='#666666', bg="#f2f2f2", font=("Segoe UI", "9", "bold")).place(x=10+len(plant.department.name*10), y=10)
-                Label(framePlant, text=plant.name, fg='#000000', bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=10, y=40)
-                Label(framePlant, text=plant.description, fg='#000000', bg="#f2f2f2", font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
+                Label(framePlant, text=plant.department.name, fg='#666666', bg=colorBackground, font=("Segoe UI", "9", "normal")).place(x=10, y=10)
+                Label(framePlant, text=plant.area.name, fg='#666666', bg=colorBackground, font=("Segoe UI", "9", "bold")).place(x=10+len(plant.department.name*10), y=10)
+                Label(framePlant, text=plant.name, fg='#000000', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=10, y=40)
+                Label(framePlant, text=plant.description, fg='#000000', bg=colorBackground, font=("Segoe UI", "9", "normal"), wraplength=180, justify='left').place(x=10, y=70)
                 
     def maintenanceToWorkOrder(self, maintenance):
         """_summary_
@@ -2220,7 +2111,7 @@ class Mantenimientos(Crm):
         canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
 
 def createFunctionToDisplayEmployer(id, object):
-    return lambda: object.parent.objetoEmpleados.displayEmployer(id)
+    return lambda event = None: object.parent.objetoEmpleados.displayEmployer(id)
 
 class Empleados():
     
@@ -2230,25 +2121,25 @@ class Empleados():
         self.parent = parent    
         self.padre = parent
     
-    def main(self):
+    def employersMainWindow(self):
         clearMainFrame()
         
-        #Title
-        Label(mainFrame, text='Empleados', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        resources.AddTittle(mainFrame, "Empleados")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Nuevo", self.newEmployerWindow, colorGreen)
         
         employerList = employers.getAll() 
         
-        Button(mainFrame, text='Nuevo',font=("Segoe UI", "9", "normal"), bg=colorGreen, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newEmployerWindow).place(x=root.winfo_width()-100, y=35)
-        
-        employerFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-40, height=root.winfo_height()-130, x=10, y=60)
+        employerFrame = ScrollableFrame(mainFrame, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-150, x=20, y=130, bg=colorBackground)
         employerFrame.place(x=10, y=40)
         
-        frameQuantity = int((root.winfo_width()-40)/300)
-        frameSeparation = int(((root.winfo_width()-40)%300)/(frameQuantity*2))
+        frameQuantity = int((mainFrame.winfo_width()-40)/300)
+        frameSeparation = int(((mainFrame.winfo_width()-40)%300)/(frameQuantity*2))
         
         for employer in employerList:
             actualFrame = Frame(employerFrame.scrollableFrame)
             actualFrame.config(bg=colorGray, highlightthickness=0, width=300, height=200)
+            actualFrame.bind('<Button-1>', createFunctionToDisplayEmployer(employer.id, self))
             actualFrame.grid(column=employerList.index(employer)%frameQuantity, row=int(employerList.index(employer)/frameQuantity), padx=frameSeparation, pady=10)
             
             #Name
@@ -2271,32 +2162,23 @@ class Empleados():
             Label(actualFrame, text=overdueMaintenances, fg=textColor, bg=colorGray, font=("Segoe UI", "16", "normal"), wraplength=300, justify='center').place(x=215, y=90, anchor=CENTER)
             Label(actualFrame, text='Mantenimientos\natrasados', fg='#666666', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='center').place(x=215, y=120, anchor=CENTER)
             
-            #Button
-            Button(actualFrame, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=createFunctionToDisplayEmployer(employer.id, self)).place(x=230, y=160)
-            
     def displayEmployer(self, id):
         clearMainFrame()
         
         employer = employers.Employer(id = id)
+        resources.AddTittle(mainFrame, employer.name, "Empleado")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", self.employersMainWindow, "#555555")
+        menu.addButton("Estadísticas", lambda: self.statistics(employer))
+        menu.addButton("Mantenimientos asignados", lambda: self.assignedMaintenancesWindow(employer))
         
-        #Button back
-        Button(mainFrame, text=' ← Regresar ',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.main).place(x=20, y=10)
-        
-        #Edit
-        Button(mainFrame, text='Estadísticas',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.statistics(employer)).place(x=root.winfo_width()-120, y=35)
-        
-        #Title
-        Label(mainFrame, text='Empleado', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=40)
-        Label(mainFrame, text='ID '+str(employer.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=60)
-        #Name
-        Label(mainFrame, text='Nombre', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=105)
-        Label(mainFrame, text=employer.name, bg='#ffffff', font=("Segoe UI", "11", "normal")).place(x=80, y=105)
-        #Key
-        Label(mainFrame, text='Clave', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=130)
-        Label(mainFrame, text=str(employer.key), bg='#ffffff', font=("Segoe UI", "11", "normal")).place(x=60, y=130)
+        global imgPerson, imgTask
+        info = resources.sectionInfo(mainFrame)
+        info.addData("ID", employer.id, imgPerson)
+        info.addData("Clave", employer.key, imgTask)
         
         #Areas
-        Label(mainFrame, text='Areas', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=150)
+        Label(mainFrame, text='Areas', bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=10, y=150)
         
         areasFrame = ScrollableFrame(mainFrame, x=10, y=180, width=(root.winfo_width()/2)-40, height=root.winfo_height()-280)
         areasFrame.place(x=10, y=180)
@@ -2311,41 +2193,6 @@ class Empleados():
             Label(areaFrame, text=area.department.name, fg='#666666', bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=20, y=20)
             #Name
             Label(areaFrame, text=area.name, fg='#333333', bg=colorGray, font=("Segoe UI", "11", "bold"), wraplength=300, justify='left').place(x=20, y=50)
-        
-        #Maintenances
-        Label(mainFrame, text='Mantenimientos programados', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=(root.winfo_width()/2)+10, y=150)
-        
-        maintenancesFrame = ScrollableFrame(mainFrame, x=(root.winfo_width()/2)+10, y=180, width=(root.winfo_width()/2)-40, height=root.winfo_height()-280)
-        maintenancesFrame.place(x=(root.winfo_width()/2)+10, y=180)
-        
-        maintenancesList = maintenances.find(employerId=employer.id, status=maintenances.Programmed)
-        for maintenance in maintenancesList:
-            mant = Frame(maintenancesFrame.scrollableFrame)
-            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=root.winfo_width()/2-100, height=100)
-            mant.pack(pady=10, padx=15)
-            if maintenance.date < datetime.now():
-                actualColor = colorRed
-            else:
-                actualColor = colorGreen
-            Frame(mant, bg=actualColor, height=100, width=3).place(x=0, y=0)
-            #Titular
-            Label(mant, text='Mantenimiento ID '+str(maintenance.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
-            #Date
-            Label(mant, text=maintenance.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
-            #Status
-            if maintenance.status == 'Realizado' or maintenance.status == 'Realizado Programado':
-                color = colorGreen
-            elif maintenance.status == 'Programado':
-                color = colorBlue
-            elif maintenance.status == 'Cancelado':
-                color = colorRed
-            Label(mant, text=maintenance.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=root.winfo_width()/2-255, y=10)
-            #type
-            Label(mant, text='Matenimiento '+maintenance.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=140, y=30)
-            #Descripción
-            Label(mant, text=maintenance.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
-            #Botón
-            Button(mant, text='Ver más',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT,command=crearFuncion(maintenance.id, self)).place(x=root.winfo_width()/2-170, y=60)
 
     def statistics(self, employer):
         global mainFrame
@@ -2394,6 +2241,36 @@ class Empleados():
         toolbar.update()
         canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
 
+    def assignedMaintenancesWindow(self, employer):
+        clearMainFrame()
+        resources.AddTittle(mainFrame, employer.name, "Mantenimientos asignados")
+        
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", lambda: self.displayEmployer(employer.id), "#555555")
+        menu.addButton("Crear orden de trabajo", lambda:self.parent.workorders.newWorkOrder(responsible = employer, maintenancesList = list(filter(lambda x: selectList[maintenancesList.index(x)].get() == 1, maintenancesList))))
+        
+        maintenancesFrame = ScrollableFrame(mainFrame, x=20, y=150, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-170, bg=colorBackground)
+        maintenancesFrame.place(x=0, y=0)
+        
+        maintenancesList = maintenances.find(employerId=employer.id, status=maintenances.Programmed, order="fecha")
+        selectList = [IntVar() for i in maintenancesList]
+        for maintenance in maintenancesList:
+            mant = Frame(maintenancesFrame.scrollableFrame)
+            mainFrame.update()
+            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=mainFrame.winfo_width()-100, height=130, cursor='hand2')
+            mant.bind('<Button-1>', func_displayMaintenance(maintenance.id, self, lambda: self.assignedMaintenancesWindow(employer)))
+            mant.pack(pady=10, padx=15)
+            Frame(mant, bg=colorRed if maintenance.date < datetime.now() else colorGreen, height=130, width=3).place(x=0, y=0)
+            #Titular
+            global imgTask, imgDate, imgStatus, imgMaintenance, imgDescription
+            info = resources.Info(mant, colorGray)
+            info.addData("ID", maintenance.id, imgTask)
+            info.addData("", maintenance.date.strftime('%d/%m/%Y'), imgDate)
+            info.addData("", maintenance.status, imgStatus)
+            info.addData("", maintenance.type, imgMaintenance)
+            info.addData("", maintenance.description, imgDescription, large=True)
+            Checkbutton(mant, cursor='hand2', variable=selectList[maintenancesList.index(maintenance)], bg=colorGray, width=1, height=1).place(x=5, y=5)
+
     def newEmployerWindow(self):
         global mainFrame
         clearMainFrame()
@@ -2433,7 +2310,9 @@ class Empleados():
 def func_displayRequisition(id, object):
     return lambda event: object.parent.inventory.displayRequisition(id)
 
-def func_displayProduct(id, object):
+def func_displayProduct(id, object, previous):
+    global previousWindow
+    previousWindow = previous
     return lambda event: object.parent.inventory.displayProduct(id)
 
 def func_removeProductFromRequisition(id, object):
@@ -2449,24 +2328,38 @@ class Inventory():
         global mainFrame
         clearMainFrame()
         
-        Label(mainFrame, text='Inventario', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
-        productsList = inventory.getProducts()
+        resources.AddTittle(mainFrame, "Inventario")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Productos", self.productsMainWindow) 
+        menu.addButton("Requisiciones", self.requisitionsMainWindow)       
+        
+    def productsMainWindow(self):
+        global mainFrame
+        clearMainFrame()
+    
+        resources.AddTittle(mainFrame, "Productos")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", self.inventoryMainWindow, "#555555")
+        menu.addButton("Nuevo producto", self.new, colorGreen)
+        menu.addButton("Exportar inventario", self.exportInventory)
         
         #Var
         self.searchString = StringVar(mainFrame)
+        productsList = inventory.getProducts()
         
         #Search
         search = Frame(mainFrame)
-        search.config(bg='#ECECEC', width=(root.winfo_width()/2)-40, height=30)
-        search.place(x=200 , y=10)
+        search.config(bg='#fafafa', width=(root.winfo_width()/2)-40, height=30)
+        search.place(x=20 , y=120)
         global searchImg 
         searchImg= PhotoImage(file='img/search.png')
         Label(search, image = searchImg, bd=0, width=12, heigh=12).place(x=12, y=9)
-        searchEntry = Entry(search, width=95, textvariable=self.searchString, font=("Segoe UI", "10", "normal"), foreground="#222222", background='#ECECEC', highlightthickness=0, relief=FLAT)
+        searchEntry = Entry(search, width=95, textvariable=self.searchString, font=("Segoe UI", "10", "normal"), foreground="#222222", background='#fafafa', highlightthickness=0, relief=FLAT)
         searchEntry.place(x=30, y=4)
         searchEntry.bind('<Key>', self.updateInventoryFrame)
         
-        self.productsFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
+        mainFrame.update()  
+        self.productsFrame = ScrollableFrame(mainFrame, x=10, y=160, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-180,bg=colorBackground)
         self.productsFrame.place(x=0, y=0)
         
         self.insertProducts(productsList)
@@ -2477,61 +2370,56 @@ class Inventory():
         self.insertProducts(productsList)
             
     def insertProducts(self, productsList):
-        itemX = int((root.winfo_width()-40)/300)
-        itemSeparation = ((root.winfo_width()-40)-(300*itemX))/(itemX+4)
+        itemX = int((mainFrame.winfo_width()-40)/250)
+        itemSeparation = ((mainFrame.winfo_width()-40)-(250*itemX))/(itemX+4)
         for product in productsList:
             productNumber = productsList.index(product)
             frame = Frame(self.productsFrame.scrollableFrame)
-            frame.config(width=300, height=200, bg=colorGray)
-            frame.bind('<Button-1>', func_displayProduct(product.id, self))
-            frame.grid(column=productNumber%itemX, row=int(productNumber/itemX), pady=itemSeparation, padx=itemSeparation)
-            title = Label(frame, text=product.name, bg=colorGray, fg='#444444',font=("Segoe UI", "10", "bold"), wraplength=180, justify=LEFT)
-            title.place(x=10, y=10)
-            description = Label(frame, text=product.description, bg=colorGray, fg='#666666', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT)
-            description.place(x=10, y=50)
-            Label(frame, text=(product.brand if product.brand != None else '')+(' - '+product.model if product.model != None else ''), bg=colorGray,fg='#555555', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT).place(x=10, y=100)
-            Label(frame, text=str(product.quantity)+ ' disponible', bg=colorGray,fg=colorRed if product.quantity==0 else colorGreen, font=("Segoe UI", "10", "normal")).place(x=10, y=200-30)
+            frame.config(width=250, height=150, bg=colorDarkGray)
+            frame.bind('<Button-1>', func_displayProduct(product.id, self, self.productsMainWindow))
+            frame.grid(column=productNumber%itemX, row=int(productNumber/itemX), pady=10, padx=itemSeparation)
+            Label(frame, text=product.name, bg=colorDarkGray, fg='#444444',font=("Segoe UI", "10", "bold"), wraplength=230, justify=LEFT).place(x=10, y=10)
+            Label(frame, text=product.description, bg=colorDarkGray, fg='#666666', font=("Segoe UI", "9", "normal"), wraplength=230, justify=LEFT).place(x=10, y=50)
+            Label(frame, text=(product.brand if product.brand != None else '')+(' - '+product.model if product.model != None else ''), bg=colorDarkGray,fg='#555555', font=("Segoe UI", "9", "normal"), wraplength=180, justify=LEFT).place(x=10, y=90)
+            Label(frame, text=str(product.quantity)+ ' disponible', bg=colorDarkGray,fg=colorRed if product.quantity==0 else colorGreen, font=("Segoe UI", "9", "normal")).place(x=10, y=120)
             
+    def exportInventory(self):
+        f = asksaveasfile(initialfile=f"Inventario - {datetime.now().strftime('%d-%m-%Y')}.pdf", defaultextension='.pdf', filetypes=[('Portable Document File', '*.pdf'),])
+        inventory.generatePDF(f.name)
+    
     def displayProduct(self, id):
         global mainFrame
         clearMainFrame()
         product = inventory.Product(id = id)
         
         #Tittle
-        Label(mainFrame, text='Producto', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
-        Label(mainFrame, text='ID '+str(product.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
-        #Name
-        Label(mainFrame, text='Nombre', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=85)
-        Label(mainFrame, text=product.name, bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=90, y=85)
-        #Description
-        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=110)
-        Label(mainFrame, text=product.description, bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=105, y=110)
+        resources.AddTittle(mainFrame, product.name, product.description)
+        menu = resources.sectionMenu(mainFrame)
+        global previousWindow
+        menu.addButton("Atrás", previousWindow, "#555555")
+        menu.addButton("Graficar", product.graphMovements)
+        menu.addButton("Registrar entrada", lambda: self.newInputInventory(product), colorGreen)
+        if product.quantity > 0: 
+            menu.addButton("Registrar salida", lambda: self.newOutputInventory(product), colorRed)
         #Quantity
-        Label(mainFrame, text='Cantidad disponible', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=135)
-        Label(mainFrame, text=str(product.quantity), bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=170, y=135)
+        Label(mainFrame, text='Cantidad disponible', bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=20, y=135)
+        Label(mainFrame, text=str(product.quantity), bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=170, y=135)
         #Delivering Time
-        Label(mainFrame, text='Tiempo de entrega', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=160)
-        Label(mainFrame, text=str(product.deliveringTime().days)+' días', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=168, y=160)
+        Label(mainFrame, text='Tiempo de entrega', bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=20, y=160)
+        Label(mainFrame, text=str(product.deliveringTime().days)+' días', bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=168, y=160)
         #Delivering Time
-        Label(mainFrame, text='Tiempo estimado para agotarse', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=250, y=160)
-        Label(mainFrame, text=str(product.calculateOutputs().days*product.quantity)+' días', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=480, y=160)
-        #Graph
-        Button(mainFrame, text='Graficar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=product.graphMovements).place(x=840, y=35)
-        #In
-        Button(mainFrame, text='Entrada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newInputInventory(product)).place(x=900, y=35)
-        #Out
-        if product.quantity > 0:    
-            Button(mainFrame, text='Salida',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newOutputInventory(product)).place(x=960, y=35)
+        Label(mainFrame, text='Tiempo estimado para agotarse', bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=250, y=160)
+        Label(mainFrame, text=str(product.calculateOutputs().days*product.quantity)+' días', bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=480, y=160)
             
         #Movements
-        Label(mainFrame, text='Movimientos de inventario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
+        Label(mainFrame, text='Movimientos de inventario',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=20, y=200)
         
-        movementsFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-60, height=root.winfo_height()-300, x=20, y=230)
+        movementsFrame = ScrollableFrame(mainFrame, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-180, x=20, y=230, bg=colorBackground)
         movementsFrame.place(x=20, y=230)
         
         for mov in product.movements:
             movNumber = product.movements.index(mov)
-            backColor = colorGray if movNumber%2==0 else colorWhite
+            backColor = colorGray if movNumber%2==0 else colorDarkGray
             productFrame = Frame(movementsFrame.scrollableFrame)
             productFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=70)
             productFrame.pack(pady=1)
@@ -2639,25 +2527,26 @@ class Inventory():
         global mainFrame
         clearMainFrame()
         
-        Label(mainFrame, text='Requisiciones', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        resources.AddTittle(mainFrame, "Requisiciones")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", self.inventoryMainWindow, "#555555")
+        menu.addButton("Nueva requisición", self.newRequisition, colorGreen)
+        
         requisitionsList = inventory.getRequisitions(quantity=40, order='date')
         
-        #New
-        Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newRequisition).place(x=root.winfo_width()-100, y=20)
-        
-        requisitionsFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
+        requisitionsFrame = ScrollableFrame(mainFrame, x=20, y=150, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-180, bg=colorBackground)
         requisitionsFrame.place(x=0, y=0)
         
-        Label(mainFrame, text='Id', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=20, y=40)
-        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=90, y=40)
-        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=270, y=40)
-        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=370, y=40)
+        Label(mainFrame, text='Id', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=20, y=120)
+        Label(mainFrame, text='Fecha', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=90, y=120)
+        Label(mainFrame, text='Estado', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=270, y=120)
+        Label(mainFrame, text='Descripción', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=370, y=120)
         
         for req in requisitionsList:
             reqNumber = requisitionsList.index(req)
-            backColor = colorGray if reqNumber%2==0 else colorWhite
+            backColor = colorGray if reqNumber%2==0 else colorDarkGray
             frame = Frame(requisitionsFrame.scrollableFrame)
-            frame.config(width=root.winfo_width()-80, height=30, bg=backColor)
+            frame.config(width=mainFrame.winfo_width()-60, height=30, bg=backColor)
             frame.bind('<Button-1>', func_displayRequisition(req.id, self))
             frame.pack(pady=1)
             Label(frame, text=req.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
@@ -2671,62 +2560,53 @@ class Inventory():
         req = inventory.Requisition(id = id)
         
         #Tittle
-        Label(mainFrame, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
-        Label(mainFrame, text='ID '+str(req.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
+        resources.AddTittle(mainFrame, "Requisición", f"ID {req.id}")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", self.requisitionsMainWindow, "#555555")
+        menu.addButton("Editar", lambda: self.newRequisition(req))
+        menu.addButton("Guardar en PDF", lambda: self.saveRequisitionPDF(req))
+        if req.status == inventory.STATUS_DRAFT: 
+            menu.addButton("Marcar solicitada", lambda: self.changeStatus(req, inventory.STATUS_REQUESTED))  
+        elif req.status == inventory.STATUS_REQUESTED:   
+            menu.addButton("Marcar confirmada", lambda: self.changeStatus(req, inventory.STATUS_CONFIRMED))
+        elif req.status == inventory.STATUS_CONFIRMED: 
+            menu.addButton("Marcar entregada", lambda: self.purchaseDelivered(req))  
+        menu.addButton("Eliminar", lambda: self.deleteRequisition(req), colorRed)
+
         #Status
-        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=85)
-        Label(mainFrame, text=req.status.capitalize(), bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=75, y=85)
+        Label(mainFrame, text='Estado', bg=colorBackground,   font=("Segoe UI", "11", "bold")).place(x=20, y=130)
+        Label(mainFrame, text=req.status.capitalize(), bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=75, y=130)
         #Created date
-        Label(mainFrame, text='Fecha de creación', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=110)
-        Label(mainFrame, text=datetime.date(req.date).strftime("%d / %b /  %Y"), bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=155, y=110)
+        Label(mainFrame, text='Fecha de creación', bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=170, y=130)
+        Label(mainFrame, text=datetime.date(req.date).strftime("%d / %b /  %Y"), bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=300, y=130)
         #Delivered date
-        Label(mainFrame, text='Fecha de recepción', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=285, y=110)
-        Label(mainFrame, text=datetime.date(req.deliveredDate).strftime("%d / %b /  %Y") if req.deliveredDate != None else 'Sin fecha', bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=425, y=110)
+        Label(mainFrame, text='Fecha de recepción', bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=435, y=130)
+        Label(mainFrame, text=datetime.date(req.deliveredDate).strftime("%d / %b /  %Y") if req.deliveredDate != None else 'Sin fecha', bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=575, y=130)
         #Description
-        Label(mainFrame, text='Comentario', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=135)
-        Label(mainFrame, text=req.description, bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=110, y=135)
+        Label(mainFrame, text='Comentario', bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=20, y=160)
+        Label(mainFrame, text=req.description, bg=colorBackground, font=("Segoe UI", "11", "normal"), wraplength=mainFrame.winfo_width()-130, justify="left").place(x=110, y=160)
         
-        #Edit
-        Button(mainFrame, text='Editar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.newRequisition(req)).place(x=880, y=35)
-        
-        #Save
-        Button(mainFrame, text='Guardar en PDF',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveRequisitionPDF(req)).place(x=934, y=35)
-        
-        #Make requested
-        if req.status == inventory.STATUS_DRAFT:    
-            Button(mainFrame, text='Marcar solicitada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(req, inventory.STATUS_REQUESTED)).place(x=1050, y=35)
-            
-        #Make confirmed
-        if req.status == inventory.STATUS_REQUESTED:    
-            Button(mainFrame, text='Marcar confirmada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(req, inventory.STATUS_CONFIRMED)).place(x=1050, y=35)
-            
-        #Make delivered
-        if req.status == inventory.STATUS_CONFIRMED:    
-            Button(mainFrame, text='Marcar entregada',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.purchaseDelivered(req)).place(x=1050, y=35)    
-        
-        #Delete button
-        Button(mainFrame, text='Eliminar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.deleteRequisition(req)).place(x=1200, y=35)
-            
         #Products
-        Label(mainFrame, text='Descripción',fg="#000000", bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=30, y=200)
-        Label(mainFrame, text='Cantidad pedidos',fg="#000000", bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=1000, y=200)
-        Label(mainFrame, text='Cantidad entregados',fg="#000000", bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=1150, y=200)
+        Label(mainFrame, text='Descripción',fg="#000000", bg=colorBackground, font=("Segoe UI", "10", "bold"), justify="center").place(x=(mainFrame.winfo_width()-40)*0.3+20, y=220)
+        Label(mainFrame, text='Cantidad pedidos',fg="#000000", bg=colorBackground, font=("Segoe UI", "10", "bold"), justify="center").place(x=(mainFrame.winfo_width()-40)*0.65+20, y=220)
+        Label(mainFrame, text='Cantidad entregados',fg="#000000", bg=colorBackground, font=("Segoe UI", "10", "bold"), justify="center").place(x=(mainFrame.winfo_width()-40)*0.85+20, y=220)
         
-        self.productsFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-60, height=root.winfo_height()-300, x=20, y=230)
-        self.productsFrame.place(x=20, y=230)
+        self.productsFrame = ScrollableFrame(mainFrame, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-270, x=20, y=250, bg=colorBackground)
+        self.productsFrame.place(x=20, y=250)
         
         for product in req.products:
             productNumber = req.products.index(product)
-            backColor = colorGray if productNumber%2==0 else colorWhite
+            backColor = colorGray if productNumber%2==0 else colorDarkGray
             productFrame = Frame(self.productsFrame.scrollableFrame)
-            productFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=70 if product.comment != None else 40)
+            productFrame.config(bg=backColor, highlightthickness=0, width=mainFrame.winfo_width()-50, height=70 if product.comment != None else 40)
+            productFrame.bind('<Button-1>', func_displayProduct(product.product.id, self, lambda: self.displayRequisition(req.id)))
             productFrame.pack(pady=1)
             #Description
             name = Label(productFrame, text=product.product.name, fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=450, justify='left')
             name.place(x=10, y=10)
             name.update()
-            Label(productFrame, text=str(product.quantity), fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='center').place(x=1030, y=10)
-            Label(productFrame, text=str(product.deliveredQuantity), fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='center').place(x=1180, y=10)
+            Label(productFrame, text=str(product.quantity), fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='center').place(x=(mainFrame.winfo_width()-40)*0.65+20, y=10)
+            Label(productFrame, text=str(product.deliveredQuantity), fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=300, justify='center').place(x=(mainFrame.winfo_width()-40)*0.85+20, y=10)
             Label(productFrame, text=product.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=1000, justify='left').place(x=10, y=35)
             productFrame.update()
             
@@ -2997,7 +2877,9 @@ class Inventory():
         self.window.destroy()
         self.displayRequisition(self.requisition.id)
  
-def func_displayWorkOrder(id, object):
+def func_displayWorkOrder(id, object, previous = None):
+    global previousWindow
+    previousWindow = previous
     return lambda event: object.parent.workorders.displayWorkOrder(id) 
         
 class WorkOrders:
@@ -3006,30 +2888,31 @@ class WorkOrders:
         global root
         self.parent = crm
     
-    def mainWindow(self):
+    def workOrdersMainWindow(self):
         global mainFrame
         clearMainFrame()
         
-        Label(mainFrame, text='Ordenes de trabajo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=10, y=10)
+        resources.AddTittle(mainFrame, "Ordenes de trabajo")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", self.parent.objetoMantenimientos.maintenancesMainWindow, "#555555")
+        menu.addButton("Nueva", self.newWorkOrder, colorGreen)
+        
         workOrdersList = workorders.getAll(orderby='date', order='DESC')
         
-        #New
-        Button(mainFrame, text='Nueva',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.newWorkOrder).place(x=root.winfo_width()-100, y=20)
-        
-        workordersFrame = ScrollableFrame(mainFrame, x=10, y=60, width=root.winfo_width()-40, height=root.winfo_height()-120)
+        workordersFrame = ScrollableFrame(mainFrame, x=20, y=180, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-180, bg=colorBackground)
         workordersFrame.place(x=0, y=0)
         
-        Label(mainFrame, text='Id', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=20, y=40)
-        Label(mainFrame, text='Fecha', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=90, y=40)
-        Label(mainFrame, text='Estado', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=270, y=40)
-        Label(mainFrame, text='Descripción', bg="#ffffff", font=("Segoe UI", "10", "bold")).place(x=370, y=40)
+        Label(mainFrame, text='Id', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=20, y=150)
+        Label(mainFrame, text='Fecha', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=90, y=150)
+        Label(mainFrame, text='Estado', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=270, y=150)
+        Label(mainFrame, text='Descripción', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=370, y=150)
         
         for work in workOrdersList:
             reqNumber = workOrdersList.index(work)
-            backColor = colorGray if reqNumber%2==0 else colorWhite
+            backColor = colorGray if reqNumber%2==0 else colorDarkGray
             frame = Frame(workordersFrame.scrollableFrame)
             frame.config(width=root.winfo_width()-80, height=30, bg=backColor)
-            frame.bind('<Button-1>', func_displayWorkOrder(work.id, self))
+            frame.bind('<Button-1>', func_displayWorkOrder(work.id, self, self.workOrdersMainWindow))
             frame.pack(pady=1)
             Label(frame, text=work.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
             Label(frame, text=datetime.date(work.date).strftime("%d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
@@ -3042,46 +2925,39 @@ class WorkOrders:
         workorder = workorders.WorkOrder(id = id)
         
         #Tittle
-        Label(mainFrame, text='Orden de trabajo', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=20)
-        Label(mainFrame, text='ID '+str(workorder.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=40)
-        Label(mainFrame, text=workorders.LANGUAGE[workorder.status].capitalize(), bg="#ffffff", font=("Segoe UI", "16", "normal")).place(x=20, y=80)
-        Label(mainFrame, text=datetime.date(workorder.date).strftime("%d / %b /  %Y"), bg="#ffffff", font=("Segoe UI", "14", "normal")).place(x=20, y=120)
-        Label(mainFrame, text='Asignada a '+workorder.responsible.name, bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=200, y=120)
+        resources.AddTittle(mainFrame, "Orden de trabajo", f"ID {workorder.id}")
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", previousWindow, "#555555")
+        menu.addButton("Guardar PDF", lambda: self.saveWorkOrderPDF(workorder))
+        if workorder.status == workorders.STATUS_DRAFT:
+            menu.addButton("Confirmar", lambda: self.changeStatus(workorder, workorders.STATUS_CONFIRMED))    
+        if workorder.status == workorders.STATUS_CONFIRMED:   
+            menu.addButton("Comenzar", lambda: self.changeStatus(workorder, workorders.STATUS_IN_PROGRESS)) 
+        if workorder.status == workorders.STATUS_IN_PROGRESS:  
+            menu.addButton("Terminar", lambda: self.changeStatus(workorder, workorders.STATUS_DONE))  
+        menu.addButton("Eliminar", lambda: self.deleteWorkOrder(workorder), colorRed)
         
-        #Save
-        Button(mainFrame, text='Guardar en PDF',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveWorkOrderPDF(workorder)).place(x=934, y=35)
+        global imgStatus, imgDate, imgPerson, imgDescription
         
-        #Description
-        Label(mainFrame, text=workorder.comment, bg="#ffffff", font=("Segoe UI", "12", "normal")).place(x=20, y=160)
-        
-        #Make confirmed
-        if workorder.status == workorders.STATUS_DRAFT:    
-            Button(mainFrame, text='Confirmar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(workorder, workorders.STATUS_CONFIRMED)).place(x=1050, y=35)
-            
-        #Make in progress
-        if workorder.status == workorders.STATUS_CONFIRMED:    
-            Button(mainFrame, text='Comenzar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(workorder, workorders.STATUS_IN_PROGRESS)).place(x=1050, y=35)
-            
-        #Make delivered
-        if workorder.status == workorders.STATUS_IN_PROGRESS:    
-            Button(mainFrame, text='Terminar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.changeStatus(workorder, workorders.STATUS_DONE)).place(x=1050, y=35)    
-        
-        #Delete button
-        Button(mainFrame, text='Eliminar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.deleteWorkOrder(workorder)).place(x=1200, y=35)
-        
+        info = resources.sectionInfo(mainFrame)
+        info.addData("", workorders.LANGUAGE[workorder.status].capitalize(), imgStatus)
+        info.addData("", datetime.date(workorder.date).strftime("%d / %b /  %Y"), imgDate)
+        info.addData("", workorder.responsible.name, imgPerson)
+        info.addData("", workorder.comment, imgDescription)
+
         #Activities
-        Label(mainFrame, text='Actividades',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=200)
+        Label(mainFrame, text='Actividades',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=20, y=200)
         
-        self.activitiesFrame = ScrollableFrame(mainFrame, width=root.winfo_width()-60, height=root.winfo_height()-300, x=20, y=230)
+        self.activitiesFrame = ScrollableFrame(mainFrame, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-250, x=20, y=230, bg=colorBackground)
         self.activitiesFrame.place(x=20, y=230)
         
         for maintenance in workorder.maintenances:
-            backColor = colorGray
+            backColor = colorDarkGray
             maintFrame = Frame(self.activitiesFrame.scrollableFrame)
-            maintFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80)
+            maintFrame.config(bg=backColor, highlightthickness=0, width=mainFrame.winfo_width()-50)
             
             titleFrame = Frame(maintFrame)
-            titleFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=75)
+            titleFrame.config(bg=backColor, highlightthickness=0, width=mainFrame.winfo_width()-50, height=75)
             #Plant
             name = Label(titleFrame, text='Mantenimiento no. '+str(maintenance.id), fg='#000000', bg=backColor, font=("Segoe UI", "11", "bold"), wraplength=300, justify='left')
             name.place(x=10, y=10)
@@ -3090,29 +2966,29 @@ class WorkOrders:
             Label(titleFrame, text=maintenance.description, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=1000, justify='left').place(x=10, y=35)
             titleFrame.pack(pady=1)
             detailFrame = Frame(maintFrame)
-            detailFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-100)
+            detailFrame.config(bg=colorGray, highlightthickness=0, width=root.winfo_width()-100)
             if maintenance.type == maintenances.Corrective:
                 for plant in maintenance.plants:
                     plantFrame = Frame(detailFrame)
-                    plantFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-80, height=70)
-                    Label(plantFrame, text=plant.department.name + ' - '+ plant.area.name +' - '+ plant.name, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=10, y=10)
+                    plantFrame.config(bg=colorGray, highlightthickness=0, width=mainFrame.winfo_width()-50, height=70)
+                    Label(plantFrame, text=plant.department.name + ' - '+ plant.area.name +' - '+ plant.name, fg='#000000', bg=colorGray, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=10, y=10)
                     plantFrame.pack(pady=1)
-                    Label(plantFrame, text=plant.description, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=10, y=30)
+                    Label(plantFrame, text=plant.description, fg='#000000', bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=10, y=30)
                     plantFrame.pack(pady=1)
             else:
                 for plant in maintenance.plants:
                     plantFrame = Frame(detailFrame)
-                    plantFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-80, height=60)
-                    Label(plantFrame, text=plant.department.name + ' - '+ plant.area.name +' - '+ plant.name, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=10, y=0)
-                    Label(plantFrame, text=plant.description, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=10, y=20)
+                    plantFrame.config(bg=colorGray, highlightthickness=0, width=mainFrame.winfo_width()-50, height=60)
+                    Label(plantFrame, text=plant.department.name + ' - '+ plant.area.name +' - '+ plant.name, fg='#000000', bg=colorGray, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=10, y=0)
+                    Label(plantFrame, text=plant.description, fg='#000000', bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=10, y=20)
                     plantFrame.pack(pady=1)
                     actFrame = Frame(detailFrame)
-                    actFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-80)
+                    actFrame.config(bg=colorGray, highlightthickness=0, width=mainFrame.winfo_width()-50)
                     for activity in plant.activities:
                         activityFrame = Frame(actFrame)
-                        activityFrame.config(bg=colorWhite, highlightthickness=0, width=root.winfo_width()-80, height=60)
-                        Label(activityFrame, text=activity.name, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=40, y=0)
-                        Label(activityFrame, text=activity.description, fg='#000000', bg=colorWhite, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=40, y=20)
+                        activityFrame.config(bg=colorGray, highlightthickness=0, width=mainFrame.winfo_width()-50, height=60)
+                        Label(activityFrame, text=activity.name, fg='#000000', bg=colorGray, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=40, y=0)
+                        Label(activityFrame, text=activity.description, fg='#000000', bg=colorGray, font=("Segoe UI", "10", "normal"), wraplength=300, justify='left').place(x=40, y=20)
                         activityFrame.pack(pady=1)
                     actFrame.pack(pady=1)
             detailFrame.pack(pady=1)
@@ -3139,9 +3015,9 @@ class WorkOrders:
         if messagebox.askyesno(title='¿Eliminar la orden de trabajo?', message=f"¿Desea eliminar la orden de trabajo con ID {workorder.id}?"):
             workorder.delete()
             messagebox.showinfo(title='Orden de trabajo eliminada', message=f"La orden de trabajo ha sido eliminada correctamente")
-        self.mainWindow()
+        self.workOrdersMainWindow()
     
-    def newWorkOrder(self):
+    def newWorkOrder(self, responsible = None, maintenancesList = None):
         self.window = Toplevel()
         self.window.state('zoomed')
         self.window.title('Orden de trabajo nueva')
@@ -3169,6 +3045,8 @@ class WorkOrders:
         #Responsible
         Label(mainframe, text='Responsable', bg="#ffffff", font=("Segoe UI", "10", "normal")).place(x=20, y=340)
         self.responsible = ttk.Combobox(mainframe, state = 'readonly', values = employers.ver('nombre'), foreground="#222222", background=colorGray)
+        if responsible:
+            self.responsible.current((employers.ver('nombre').index(responsible.name)))
         self.responsible.place(x=20, y=370)
         
         #Comment
@@ -3188,6 +3066,9 @@ class WorkOrders:
         #Maintenances in work order
         self.maintenancesTable = crearTabla(['Fecha', 'Descripción'], [1,], [100,500], [['',''],], mainframe, 8, '' )
         self.maintenancesTable.place(x=400, y=300)
+        
+        workorder.maintenances = maintenancesList
+        self.updateWorkOrderMaintenancesTable(workorder, self.maintenancesTable)
             
         #Remove
         Button(mainframe, text='Quitar',font=("Segoe UI", "9", "normal"), bg=colorRed, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.removeMaintenanceFromWorkOrder(workorder, maintenances.Maintenance(id = self.maintenancesTable.focus()))).place(x=1050, y=300)
