@@ -402,9 +402,12 @@ def crearRequisiion():
     print(newRequisition.products[0])
     newRequisition.save()
     
+def generatePDF(filename):
+    pdf.createInventory(filename, [Product(x[0]) for x in sql.petition("SELECT id FROM inventory WHERE quantity > 0")])
+
 if __name__ == '__main__':
     #checkDatabase()
-    product = Product(id=1)
-    product.recalculateQuantity()
+    generatePDF('C:/Users/EMMAN/Desktop/Inventario - 24-01-2023.pdf')
 else:
     map(lambda x: x.recalculateQuantity, getProducts())
+    

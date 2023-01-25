@@ -17,7 +17,18 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT, TA_CENTER
+from reportlab.lib.units import cm
+from reportlab.lib import colors
 from datetime import datetime
+
+styles = getSampleStyleSheet()
+styleN = styles["BodyText"]
+styleN.alignment = TA_LEFT
+styleBH = styles["Normal"]
+styleBH.alignment = TA_CENTER
 
 def drawParagraph(page, text, x, y, fontstyle = "Normal", fontsize = 12, width = 68):
     text = text.replace('\n', ' \n')
@@ -244,6 +255,49 @@ def createWorkOrder(workOrder, filename):
     
     page.showPage()
     page.save()
+    
+def createInventory(filename, inventory):
+    '''w, h = letter
+    pdfmetrics.registerFont(TTFont('Normal', 'segoeui.ttf'))
+    pdfmetrics.registerFont(TTFont('Semibold', 'seguisb.ttf'))
+    pdfmetrics.registerFont(TTFont('Bold', 'segoeuib.ttf'))
+    
+    page = canvas.Canvas(filename, pagesize=letter)
+    page.drawImage("img/logo.jpg", w-180, h-65, width=130, height=37)
+    page.setFont("Bold",16)
+    page.drawString(50, h - 50, 'Departamento eléctrico') #Draw text
+    page.setFont("Semibold",22)
+    page.drawString(50, h - 90, 'Inventario') 
+    page.setFillColorRGB(0.4, 0.4, 0.4)
+    page.setFont("Normal",12)
+    page.drawString(50	, h - 120, 'Fecha') 
+    page.setFillColorRGB(0,0,0)
+    page.setFont("Semibold",12)
+    page.drawString(100, h - 120, datetime.now().strftime("%d / %m / %Y")) '''
+
+    doc = SimpleDocTemplate(filename, pagesize=letter)
+    elements = []
+    
+    data = [[Paragraph('''<b>Nombre</b>''', styleBH),Paragraph('''<b>Descripción</b>''',styleBH), Paragraph('''<b>Cantidad</b>''', styleBH)]]
+    data += [[Paragraph(x.name, styleN), Paragraph(x.description, styleN), x.quantity] for x in inventory]
+    t = Table(data, colWidths=(240,250,60))
+    t.setStyle(TableStyle([
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.black),
+    ]))
+    elements.append(t)
+    doc.build(elements)
+    #t.wrapOn(page, w, h)
+    #t.drawOn(page, *coord(1, 25, cm))
+    
+    #page.showPage()
+    #page.save() 
+    
+def coord(x, y, unit=1):
+    w, h = letter
+    x, y = x * unit, h -  y * unit
+    return x, y
     
 if __name__ == '__main__':
     #createRequisitionReport(inventory.Requisition(id = 12), 'C:/Users/EMMAN/Documents/Compras/Pendientes de solicitar/Prueba.pdf')
