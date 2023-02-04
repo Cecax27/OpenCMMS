@@ -1,9 +1,26 @@
 import sqlite3 as sql
+import mysql.connector
+from mysql.connector import errorcode
 
 db = 'database.db'
 
+def connector():
+	try:
+		cnx = mysql.connector.connect(user='root', password='toor', host='127.0.0.1', database = 'managment')
+	except mysql.connector.Error as err:
+		if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+			print("Something is wrong with your user name or password")
+		elif err.errno == errorcode.ER_BAD_DB_ERROR:
+			print("Database does not exist")
+		else:
+			print(err)
+	else:
+		return cnx
+  		
+
 def checkDatabase():
-    peticion('''CREATE TABLE IF NOT EXISTS "workorders" (
+    pass
+    """ peticion('''CREATE TABLE IF NOT EXISTS "workorders" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"date"	TIMESTAMP NOT NULL,
 	"status"	TEXT NOT NULL,
@@ -54,72 +71,84 @@ def checkDatabase():
 	"origin_id"	INTEGER,
 	FOREIGN KEY("product_id") REFERENCES "inventory"("id"),
 	PRIMARY KEY("id" AUTOINCREMENT)
-	);''')
+	);''') """
     
-
-def table(nombre):
-	"""Agrega una tabla a la base de datos.
-	Argumento:
-		nombre = será el nombre de la tabla"""
-	conn = sql.connect(db)
-	instruccion = """CREATE TABLE 'empleados'
-	('id'	INTEGER NOT NULL UNIQUE,
-	'clave' INTEGER,
-	'nombre' TEXT,
-	PRIMARY KEY('id' AUTOINCREMENT)
-	)"""
-	cursor = conn.cursor()
-	cursor.execute(instruccion)
-	conn.commit()
-	conn.close()
 
 def peticion(peticion):
 	"""Hace una petición a la base de datos SQL
 	Argumento:
 		peticion = un string con la petición"""
-	conn = sql.connect(db)
+	petition(peticion)
+	""" conn = sql.connect(db)
 	cursor = conn.cursor()
 	cursor.execute(peticion)
 	retorno = cursor.fetchall()
 	conn.commit()
 	conn.close()
-	return retorno
+	return retorno """
 
 def petitionWithParam(petition, values):
 	"""Hace una petición a la base de datos SQL
 	Argumento:
 		petition = un string con la petición"""
-	conn = sql.connect(db, detect_types = sql.PARSE_DECLTYPES | sql.PARSE_COLNAMES)
+	cnx = connector()
+	cursor = cnx.cursor()
+	try:
+		cursor.execute(petition, values)
+		cursor.commit()
+		#result = cursor.fetchall()
+	except mysql.connector.Error as err:
+		print("Error.")
+		print(err)
+	cnx.close()
+	#return result
+	""" conn = sql.connect(db, detect_types = sql.PARSE_DECLTYPES | sql.PARSE_COLNAMES)
 	cursor = conn.cursor()
 	cursor.execute(petition, values)
 	conn.commit()
 	conn.close()
- 
+  """
 def petition(petition):
 	"""Hace una petición a la base de datos SQL
 	Argumento:
 		petition = un string con la petición"""
-	conn = sql.connect(db, detect_types = sql.PARSE_DECLTYPES | sql.PARSE_COLNAMES)
+	cnx = connector()
+	cursor = cnx.cursor()
+	try:
+		cursor.execute(petition)
+		result = cursor.fetchall()
+	except mysql.connector.Error as err:
+		print("Error.")
+		print(err)
+	cnx.close()
+	return result
+	""" conn = sql.connect(db, detect_types = sql.PARSE_DECLTYPES | sql.PARSE_COLNAMES)
 	cursor = conn.cursor()
 	cursor.execute(petition)
 	retorno = cursor.fetchall()
 	conn.commit()
 	conn.close()
-	return retorno
+	return retorno """
  
-def peticiontres(peticion):
+#def peticiontres(peticion):
 	"""Hace una petición a la base de datos SQL
 	Argumento:
 		peticion = un string con la petición"""
-	conn = sql.connect(db, detect_types = sql.PARSE_DECLTYPES | sql.PARSE_COLNAMES)
+	""" conn = sql.connect(db, detect_types = sql.PARSE_DECLTYPES | sql.PARSE_COLNAMES)
 	cursor = conn.cursor()
 	cursor.execute(peticion)
 	retorno = cursor.fetchall()
 	conn.commit()
 	conn.close()
-	return retorno
+	return retorno """
 
 if __name__ == '__main__':
-	list = petition(f"SELECT * FROM mantenimientos WHERE anteriorId IS NOT NULL OR siguienteId IS NOT NULL")
-	for i in list:
-		print(f"UPDATE `mantenimientos` SET `anteriorId` = {i[7] if i[7] != None else 'NULL'}, `siguienteId` = {i[8] if i[8] != None else 'NULL'} WHERE `id` = {i[0]};")
+	cnx = connector()
+	cursor = cnx.cursor()
+	try:
+		cursor.execute("SELECT * FROM empleados")
+		print(cursor.fetchall())
+	except mysql.connector.Error as err:
+		print("Error.")
+		print(err)
+	cnx.close()
