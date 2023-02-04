@@ -11,7 +11,7 @@ class ScrollableFrame:
         self.canvas.create_window((0, 0), window=self.scrollableFrame, anchor='nw')
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         
-    def place(self, x, y):
+    def place(self, x = None, y = None):
         #self.masterFrame.place(x=x, y=y)
         self.canvas.pack(side="left", fill="both", expand=True, padx=2, pady=2)
         self.scrollbar.pack(side="right", fill="y")
@@ -19,3 +19,6 @@ class ScrollableFrame:
     def clear(self):
         for widget in self.scrollableFrame.winfo_children():
             widget.destroy()
+            
+    def set(self, y):
+        self.canvas.yview_moveto(y)

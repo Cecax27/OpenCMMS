@@ -4,8 +4,9 @@ except:
     from modules import sql
 try:
     import areas
+    import maintenances
 except:
-    from modules import areas
+    from modules import areas, maintenances
 
 class Plant:
     def __init__(self, id = 0):
@@ -34,6 +35,15 @@ class Plant:
         self.area = areas.Area(id =rawDataArea[0])
         self.department = areas.Department(id = rawDataArea[4])
         self.activities = []
+        
+    def getMaintenances(self):
+        return [maintenances.Maintenance(id[0]) for id in sql.petition(f"SELECT DISTINCT mantenimientos_actividadesAsignadas.mantenimientoId FROM mantenimientos_actividadesAsignadas LEFT JOIN actividadesAsignadas ON mantenimientos_actividadesAsignadas.actividadesId = actividadesAsignadas.id LEFT JOIN mantenimientos ON mantenimientos_actividadesAsignadas.mantenimientoId = mantenimientos.id WHERE actividadesAsignadas.idEquipo = {self.id} ORDER BY mantenimientos.fecha DESC")]
+    
+    def getLastMaintenance(self):
+        id = sql.petition(f"SELECT mantenimientos.id, MAX(mantenimientos.fecha) FROM mantenimientos LEFT JOIN mantenimientos_actividadesAsignadas ON mantenimientos.id = mantenimientos_actividadesAsignadas.mantenimientoId LEFT JOIN actividadesAsignadas ON mantenimientos_actividadesAsignadas.actividadesId = actividadesAsignadas.id WHERE actividadesAsignadas.idEquipo = {self.id} AND mantenimientos.estado = '{maintenances.Done}'")[0][0]
+        if id == None:
+            return None
+        return maintenances.Maintenance(id)
 
 def new(nombre, descripcion, area):
     """Inserta un nuevo equipo en la base de datos.
@@ -73,5 +83,19 @@ def eliminar(id):
     instruccion = f"DELETE FROM equipos WHERE id = '{id}'"
     sql.peticion(instruccion)
 
+def get(all = False, name = None, department = None, area = None):
+    if all:
+        return [Plant(id[0]) for id in sql.petition(f"SELECT id FROM equipos ORDER BY area")]
+    instruction = f"SELECT equipos.id FROM equipos LEFT JOIN areas ON equipos.area = areas.id WHERE "
+    if name != None and name != "":
+        instruction += f" equipos.nombre LIKE '%{name}%' "
+    if department != None and department != -1:
+        instruction += "AND" if (name != None and name != "") else "" 
+        instruction += f" areas.departamento = {department} "
+    if area != None and area != -1:
+        instruction += "AND" if ((name != None and name != "") or (department != None and department != -1)) else "" 
+        instruction += f" equipos.area = {area} "
+    instruction += " ORDER BY area"
+    return [Plant(id[0]) for id in sql.petition(instruction)]
 
 

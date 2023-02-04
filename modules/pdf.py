@@ -31,7 +31,7 @@ styleBH = styles["Normal"]
 styleBH.alignment = TA_CENTER
 
 def drawParagraph(page, text, x, y, fontstyle = "Normal", fontsize = 12, width = 68):
-    text = text.replace('\n', ' \n')
+    text = text.replace('\n', ' \n ')
     description = page.beginText(x, y)
     description.setFont(fontstyle, fontsize)
     paragraph = text.split(' ')
@@ -173,7 +173,7 @@ def createWorkOrder(workOrder, filename):
         while i < len(paragraph): 
             count = 0
             line = ''
-            while count < 68 and i < len(paragraph):
+            while count < 60 and i < len(paragraph):
                 line = line + ' ' + paragraph[i]
                 count += len(paragraph[i])
                 i += 1
@@ -187,7 +187,7 @@ def createWorkOrder(workOrder, filename):
     lastPosition = h-215
     for maintenance in workOrder.maintenances:
         page.setFillColorRGB(0.95,0.95,0.95)
-        rectHeight = (15 if len(maintenance.description)>0 else 0) + (10*math.ceil(len(maintenance.description)/80))
+        rectHeight = (15 if len(maintenance.description)>0 else 0) + (10*math.ceil(len(maintenance.description)/70))
         page.rect(50, lastPosition-5 -rectHeight, w-100, rectHeight+20, 0, 1)
         page.setFillColorRGB(0,0,0)
         page.setFont("Bold",11)
@@ -195,40 +195,40 @@ def createWorkOrder(workOrder, filename):
         page.setFont("Normal",11)
         page.drawString(200, lastPosition, 'Mantenimiento '+str(maintenance.type))
         lastPosition -= 20
-        lastPosition -= 10*drawParagraph(page, maintenance.description, 60, lastPosition, fontsize=11, width=79)
+        lastPosition -= 10*drawParagraph(page, maintenance.description, 60, lastPosition, fontsize=11, width=75)
         lastPosition -= 20
         if lastPosition <= 60:
                     page.showPage()
                     lastPosition = h-60
         if maintenance.type == maintenances.Corrective:
             for plant in maintenance.plants:
-                page.rect(60, lastPosition-5, 15, 15, 1, 0)
+                page.rect(60, lastPosition-16, 10, 10, 1, 0)
                 page.setFont("Bold",10)
-                page.drawString(100, lastPosition, plant.department.name + ' - '+ plant.area.name +' - '+ plant.name)
+                page.drawString(60, lastPosition, plant.department.name + ' - '+ plant.area.name +' - '+ plant.name)
                 lastPosition -= 15
-                lastPosition -= 15*drawParagraph(page, plant.description, 97, lastPosition, fontsize=10)
-                lastPosition -= 20
+                lastPosition -= 15*drawParagraph(page, plant.description, 77, lastPosition, fontsize=10)
+                lastPosition -= 10
                 if lastPosition <= 60:
                     page.showPage()
                     lastPosition = h-60
         else:
             for plant in maintenance.plants:
                 page.setFont("Bold",10)
-                page.drawString(60, lastPosition, plant.department.name + ' - '+ plant.area.name +' - '+ plant.name)
+                page.drawString(80, lastPosition, plant.department.name + ' - '+ plant.area.name +' - '+ plant.name)
                 lastPosition -= 15
-                lastPosition -= 15*drawParagraph(page, plant.description, 57, lastPosition, fontsize=10)
+                lastPosition -= 15*drawParagraph(page, plant.description, 77, lastPosition, fontsize=10)
                 lastPosition -= 10
                 if lastPosition <= 60:
                     page.showPage()
                     lastPosition = h-60
                 
                 for activity in plant.activities:
-                    page.rect(60, lastPosition-5, 15, 15, 1, 0)
+                    page.rect(60, lastPosition-5, 10, 10, 1, 0)
                     page.setFont("Bold",10)
-                    page.drawString(100, lastPosition, activity.name)
+                    page.drawString(80, lastPosition, activity.name)
                     lastPosition -= 15
-                    lastPosition -= 15*drawParagraph(page, activity.description, 97, lastPosition, fontsize=10)
-                    lastPosition -= 20
+                    lastPosition -= 15*drawParagraph(page, activity.description, 77, lastPosition, fontsize=10)
+                    lastPosition -= 5
                     if lastPosition <= 60:
                         page.showPage()
                         lastPosition = h-60

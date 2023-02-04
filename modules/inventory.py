@@ -284,9 +284,10 @@ class Requisition():
         self.status = status
         if save == True:
             self.save()
-            for detail in self.products:
-                detail.status = status
-                detail.save()
+            if status != STATUS_PARTIAL_DELIVERED:
+                for detail in self.products:
+                    detail.status = status
+                    detail.save()
             
     def generatePDF(self, filename):
         pdf.createRequisitionReport(self, filename)

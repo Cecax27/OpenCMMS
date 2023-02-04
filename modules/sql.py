@@ -120,4 +120,6 @@ def peticiontres(peticion):
 	return retorno
 
 if __name__ == '__main__':
-	table('empleados')
+	list = petition(f"SELECT * FROM mantenimientos WHERE anteriorId IS NOT NULL OR siguienteId IS NOT NULL")
+	for i in list:
+		print(f"UPDATE `mantenimientos` SET `anteriorId` = {i[7] if i[7] != None else 'NULL'}, `siguienteId` = {i[8] if i[8] != None else 'NULL'} WHERE `id` = {i[0]};")

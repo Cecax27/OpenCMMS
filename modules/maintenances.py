@@ -68,34 +68,25 @@ class Maintenance:
     def save(self):
         """Save the maintenance in the database"""
         if self.id == 0: #If is a new maintenance
-            print("Saving maintenance...")
-            nuevo(
-                self.date,
-                self.status,
-                self.responsible,
-                self.description,
-                self.type,
-                self.repeat,
-                self.previous,
-                self.next)
-            self.id = ultimoMantenimiento()
+            sql.petitionWithParam(f"INSERT INTO mantenimientos VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?)", (self.date, self.status, self.responsible, self.description, self.type, self.repeat, self.previous, self.next))
+            self.id = sql.petition("SELECT MAX(id) FROM mantenimientos")[0][0]
             print(f"The maintenance was created with id {self.id}")
+            if self.type == Corrective:
+                for plant in self.plants:
+                    if findCorrectiveActivity(plant.id):
+                        agregarActividad(self.id, findCorrectiveActivity(plant.id))
+                        print(f"Plant Id {plant.id} added")
+                    else:
+                        nuevaActividadAsignada('Mantenimiento correctivo', 'Se corrigió alguna falla en el equipo', 2, plant.id)
+                        agregarActividad(self.id, findCorrectiveActivity(plant.id))
+                        print(f"Plant Id {plant.id} added")
+            elif self.type == Preventive:
+                for i in self.activities:
+                    sql.petition(f"INSERT INTO mantenimientos_actividadesAsignadas VALUES (NULL, {self.id}, {i.id})")
+                    print(f"Activity Id {i.id} added")
         else: #If isnt a new maintenance
             editar(self.id, self.date, self.status, self.responsible, self.description, self.type, self.repeat, self.previous, self.next)
             print(f"Maintenance with ID {self.id} was updated")
-        if self.type == Corrective:
-            for plant in self.plants:
-                if findCorrectiveActivity(plant.id):
-                    agregarActividad(self.id, findCorrectiveActivity(plant.id))
-                    print(f"Plant Id {plant.id} added")
-                else:
-                    nuevaActividadAsignada('Mantenimiento correctivo', 'Se corrigió alguna falla en el equipo', 2, plant.id)
-                    agregarActividad(self.id, findCorrectiveActivity(plant.id))
-                    print(f"Plant Id {plant.id} added")
-        elif self.type == Preventive:
-            for i in self.activities:
-                agregarActividad(self.id, i.id)
-                print(f"Activity Id {i.id} added")
                 
         if self.products != None:
             for mov in self.products:
@@ -111,14 +102,14 @@ class Maintenance:
             Maintenance object: The new maintenance. True if the maintenance cannot be schedule.
         """
         if self.status == Done and self.repeat != None and self.next==None:
-            newMaintenance = Maintenance(id = self.id)
+            newMaintenance = Maintenance(self.id)
             newMaintenance.id = 0
             newMaintenance.status = Programmed
             newMaintenance.previous = self.id
             newMaintenance.date = self.date+timedelta(days=self.repeat)
             newMaintenance.save()
             self.next = newMaintenance.id
-            self.save()
+            sql.petitionWithParam(f"UPDATE mantenimientos SET siguienteId=? WHERE id = {self.id}", (self.next,))
             print(f"The maintenance with ID {newMaintenance.id} was scheduled")
             return newMaintenance
         print("The maintenance can not be schedule")
@@ -144,7 +135,7 @@ class Maintenance:
         Returns:
             bool: True if there is an error. False else.
         """
-        rawData = buscar(id)
+        rawData = sql.petition(f"SELECT * FROM mantenimientos WHERE id = {id}")[0]
         if len(rawData) == 0:
             print(f"Maintenance with ID {id} was not found")
             return 1
@@ -157,7 +148,7 @@ class Maintenance:
         if self.type == Preventive: #If is a preventive maintenance
             self.activities = []
             self.plants = []
-            for i in buscarActividades(self.id):
+            for i in sql.petition(f"SELECT * FROM mantenimientos_actividadesAsignadas WHERE mantenimientoId = {id}"):
                 self.activities.append(Activity(id = i[2], assigned = True))
             for activity in self.activities:
                 if self.activities.index(activity) == 0:
@@ -175,13 +166,12 @@ class Maintenance:
                     self.plants[self.plants.index(activity.plant)].activities.append(activity)
         elif self.type == Corrective: #If is a corrective maintenance
             self.plants = []
-            for i in buscarActividades(self.id):
+            for i in sql.petition(f"SELECT * FROM mantenimientos_actividadesAsignadas WHERE mantenimientoId = {id}"):
                 self.plants.append(Activity(id = i[2], assigned = True).plant)
         self.repeat = rawData[6]
         self.previous = rawData[7]
         self.next = rawData[8]
         self.products = findProducts(self.id)
-        #print(f"Maintenance with ID {id} was found")
         return 0
     
     def addMovement(self, productId = 0, product = None, quantity = 0, type = inventory.OUTPUT, comment = None):
@@ -308,7 +298,7 @@ def buscarTodos():
 def getMaintenanceDate(maintenance):
     return maintenance.date
 
-def getAll(limit = 0, order = 'date'):
+def getAll(limit = None, offset = None, order = 'date'):
     """Return all the maintenances in the database. You can limit the search with limit argument.
 
     Args:
@@ -317,7 +307,7 @@ def getAll(limit = 0, order = 'date'):
     Returns:
         list: A list with Maintenances objects
     """
-    return [Maintenance(id = x[0]) for x in sql.petition(f"SELECT id FROM mantenimientos{' ORDER BY fecha DESC' if order == 'date' else ''}{' LIMIT '+str(limit) if limit != 0 else ''}")]
+    return [Maintenance(id = x[0]) for x in sql.petition(f"SELECT id FROM mantenimientos{' ORDER BY fecha DESC' if order == 'date' else ''}{' LIMIT '+str(limit) if limit != None else ''}{' OFFSET '+str(offset) if offset != None else ''}")]
 
 def getProgrammed():
     """Return all maintenances in the database where status is Programmed"""
@@ -410,6 +400,9 @@ def find(overdue = False, employerId = 0, status = None, order = None):
         instruction += f"ORDER BY {order}"
 
     return [Maintenance(id = id[0]) for id in sql.petition(instruction)]
+
+def count():
+    return sql.petition("SELECT count(id) FROM mantenimientos")[0][0]
         
     
 
