@@ -2,6 +2,10 @@ try:
     import sql
 except:
     from modules import sql
+    
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 #Classes
 class Employer():
@@ -28,6 +32,15 @@ class Employer():
         else:
             sql.petition(f"UPDATE empleados SET name = {self.name}, key = {self.key} WHERE id = {self.id}")
             return True
+        
+    def stats(self):
+        maintenances = pd.DataFrame(sql.petition(f"SELECT date(fecha), estado, tipo FROM mantenimientos WHERE responsable = {self.id} ORDER BY fecha"), columns=['Date', 'Status', 'Type'])
+        maintenances['Year'] = maintenances['Date'].apply(lambda x: x.split('-')[0])
+        maintenances['Month'] = maintenances['Date'].apply(lambda x: x.split('-')[1])
+        maintenances['Day'] = maintenances['Date'].apply(lambda x: x.split('-')[2])
+        
+        sns.histplot(maintenances, x='Month', hue='Type', )
+        plt.show()
         
 
 def new(clave, nombre):
@@ -65,4 +78,4 @@ def getAll():
     return list
 
 if __name__ == '__main__':
-    print(getAll())
+    Employer(13).stats()

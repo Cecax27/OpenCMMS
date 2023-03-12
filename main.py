@@ -1813,8 +1813,9 @@ class Maintenances(Crm):
             select.date = datetime.now()
             select.save()
             messagebox.showinfo(title='Editado con éxito', message='El mantenimiento ha sido modificado correctamente.')
-            if messagebox.askyesno(title='¿Programar siguiente?', message='¿Desea programar el siguiente mantenimiento?'):
-                self.programar(select.id)
+            if select.type == maintenances.Preventive:
+                if messagebox.askyesno(title='¿Programar siguiente?', message='¿Desea programar el siguiente mantenimiento?'):
+                    self.programar(select.id)
 
     def cancelarMantenimiento(self, maintenance):
         maintenance.cancel()
@@ -1957,6 +1958,7 @@ class Maintenances(Crm):
         plot2 = fig.add_subplot(212)
         rawData = sql.petition("SELECT strftime('%m',fecha) as month ,COUNT(id) as quantity FROM mantenimientos WHERE tipo='Preventivo' GROUP BY strftime('%Y',fecha), strftime('%m',fecha) ORDER BY fecha")
         plot2.set_title("Mantenimientos preventivos por mes")
+        
         plot2.set_xlabel('Mes')
         plot2.set_ylabel('Mantenimientos')
         plot2.bar([row[0] for row in rawData],[row[1] for row in rawData], color='#93C2E4')
@@ -2069,6 +2071,8 @@ class Empleados():
         info.addData("Mantenimientos correctivos", str(sql.petition(f"SELECT COUNT(id) FROM mantenimientos WHERE tipo='Correctivo' AND responsable = {employer.id}")[0][0]), imgDescription)
         
         #Graphs
+        employer.stats()
+        
         graph = Frame(mainFrame, width=500, height=300, bg=colorBackground)
         graph.place(x=20, y=200)
         fig = Figure(figsize=(5,4), dpi=100)
@@ -2163,7 +2167,7 @@ class Empleados():
 def func_displayRequisition(id, object):
     return lambda event: goNext(lambda: object.parent.inventory.displayRequisition(id))
 
-def func_displayProduct(id, object, previous):
+def func_displayProduct(id, object):
     return lambda event: goNext(lambda: object.parent.inventory.displayProduct(id))
 
 def func_removeProductFromRequisition(id, object):
@@ -2182,7 +2186,8 @@ class Inventory():
         resources.AddTittle(mainFrame, "Inventario")
         menu = resources.sectionMenu(mainFrame)
         menu.addButton("Productos", lambda: goNext(self.productsMainWindow)) 
-        menu.addButton("Requisiciones", lambda: goNext(self.requisitionsMainWindow))       
+        menu.addButton("Requisiciones", lambda: goNext(self.requisitionsMainWindow))  
+        menu.addButton("Proveedores", lambda:goNext(self.suppliersMainWindow))     
         
     def productsMainWindow(self):
         global mainFrame
@@ -2227,7 +2232,7 @@ class Inventory():
             productNumber = productsList.index(product)
             frame = Frame(self.productsFrame.scrollableFrame)
             frame.config(width=250, height=150, bg=colorDarkGray)
-            frame.bind('<Button-1>', func_displayProduct(product.id, self, self.productsMainWindow))
+            frame.bind('<Button-1>', func_displayProduct(product.id, self))
             frame.grid(column=productNumber%itemX, row=int(productNumber/itemX), pady=10, padx=itemSeparation)
             Label(frame, text=product.name, bg=colorDarkGray, fg='#444444',font=("Segoe UI", "10", "bold"), wraplength=230, justify=LEFT).place(x=10, y=10)
             Label(frame, text=product.description, bg=colorDarkGray, fg='#666666', font=("Segoe UI", "9", "normal"), wraplength=230, justify=LEFT).place(x=10, y=50)
@@ -2242,6 +2247,7 @@ class Inventory():
         global mainFrame
         clearMainFrame()
         product = inventory.Product(id = id)
+        product.findMovements()
         
         #Tittle
         resources.AddTittle(mainFrame, product.name, product.description)
@@ -2258,7 +2264,7 @@ class Inventory():
         info = resources.sectionInfo(mainFrame)
         info.addData("Cantidad disponible", product.quantity, imgQuantity)
         info.addData("Tiempo de entrega", str(product.deliveringTime().days)+' días', imgTime)
-        info.addData("Tiempo estimado para agotarse", str(product.calculateOutputs().days*product.quantity)+' días', imgTime)
+        info.addData("Tiempo estimado para agotarse", str(product.calculateOutputs()*product.quantity)+' días', imgTime)
         info.addData("Marca", product.brand, imgDescription)
         info.addData("Modelo", product.model, imgDescription)
         
@@ -2383,6 +2389,7 @@ class Inventory():
         menu = resources.sectionMenu(mainFrame)
         menu.addButton("Atrás", goBack, "#555555")
         menu.addButton("Nueva requisición", lambda: goNext(self.newRequisition), colorGreen)
+        menu.addButton("Productos pendientes", lambda: goNext(self.pendingProductsWindow))
         
         requisitionsList = inventory.getRequisitions(quantity=40, order='date')
         
@@ -2446,7 +2453,7 @@ class Inventory():
             backColor = colorGray if productNumber%2==0 else colorDarkGray
             productFrame = Frame(self.productsFrame.scrollableFrame)
             productFrame.config(bg=backColor, highlightthickness=0, width=mainFrame.winfo_width()-50, height=70 if product.comment != None else 40)
-            productFrame.bind('<Button-1>', func_displayProduct(product.product.id, self, lambda: self.displayRequisition(req.id)))
+            productFrame.bind('<Button-1>', func_displayProduct(product.product.id, self))
             productFrame.pack(pady=1)
             #Description
             name = Label(productFrame, text=product.product.name, fg='#000000', bg=backColor, font=("Segoe UI", "11", "normal"), wraplength=450, justify='left')
@@ -2476,7 +2483,7 @@ class Inventory():
         #Tittle
         resources.AddTittle(mainFrame, "Requisición", f"ID {requisition.id}")
         menu = resources.sectionMenu(mainFrame)
-        menu.addButton("Cancelar", lambda: self.displayRequisition(requisition.id), "#555555")
+        menu.addButton("Cancelar", goBack, "#555555")
         menu.addButton("Guardar como entrega total", lambda: self.processPurchase(requisition, detailsList), colorGreen)
         menu.addButton("Guardar como entrega parcial", lambda: self.processPurchase(requisition, detailsList, partial = True), colorGreen)
         
@@ -2635,8 +2642,14 @@ class Inventory():
         
         self.window.update()
         mainframe = Frame(self.window)
-        mainframe.config(bg=colorWhite, width=self.window.winfo_width(), height=self.window.winfo_height())
+        mainframe.config(bg=colorBackground, width=self.window.winfo_width(), height=self.window.winfo_height())
         mainframe.pack()
+        
+        resources.AddTittle(mainframe, "Requisición", "nueva" if requisition == None else requisition.id)
+        menu = resources.sectionMenu(mainframe)
+        menu.addButton("Atrás", goBack, "#555555")
+        menu.addButton("Guardar", self.saveRequisition)
+        menu.addButton("Nuevo producto", self.newProduct, colorGreen)
         
         #Var
         self.searchString = StringVar(mainframe)
@@ -2650,51 +2663,46 @@ class Inventory():
         else:
             self.requisition = requisition
         
-        #Tittle
-        Label(mainframe, text='Requisición', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=26)
-        Label(mainframe, text='Nueva' if requisition == None else 'ID '+str(self.requisition.id), bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
         
-        #Save
-        Button(mainframe, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.saveRequisition).place(x=root.winfo_width()-100, y=35)
         
         #Search
         search = Frame(mainframe)
-        search.config(bg='#ECECEC', width=(root.winfo_width()/2)-40, height=30)
-        search.place(x=20 , y=100)
+        search.config(bg=colorWhite, width=(root.winfo_width()/2)-40, height=30)
+        search.place(x=20 , y=130)
         global searchImg 
         searchImg= PhotoImage(file='img/search.png')
         Label(search, image = searchImg, bd=0, width=12, heigh=12).place(x=12, y=9)
-        searchEntry = Entry(search, width=95, textvariable=self.searchString, font=("Segoe UI", "10", "normal"), foreground="#222222", background='#ECECEC', highlightthickness=0, relief=FLAT)
+        searchEntry = Entry(search, width=95, textvariable=self.searchString, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT)
         searchEntry.place(x=30, y=4)
         searchEntry.bind('<Key>', self.updateInventorySearch)
         
         #Products table
         tableWidth = int(((root.winfo_width()/2)-40)/4)
         self.productsTable = crearTabla(['Nombre', 'Descripción', 'Marca', 'Modelo'], [1,], [tableWidth,tableWidth,tableWidth,tableWidth], [['','','',''],], mainframe, 4, '' )
-        self.productsTable.place(x=20, y=140)
+        self.productsTable.place(x=20, y=170)
         
         #Coment
-        Label(mainframe, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=20, y=270)
-        self.comment = Text(mainframe, width=int(((root.winfo_width()/2)-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=3)
-        self.comment.place(x=20, y=296)
+        Label(mainframe, text='Comentario',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=290)
+        self.comment = Text(mainframe, width=int(((root.winfo_width()/2)-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT, height=3)
+        self.comment.place(x=20, y=320)
         
         #Quantity
-        Label(mainframe, text='Cantidad',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=20, y=370)
-        Entry(mainframe, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=20, y=392)
+        Label(mainframe, text='Cantidad',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=400)
+        Entry(mainframe, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT).place(x=20, y=430)
         
         #Add product
-        Button(mainframe, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToRequisition).place(x=300, y=392)
+        Button(mainframe, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToRequisition).place(x=300, y=420)
         
         #Products
-        Label(mainframe, text='Productos',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=root.winfo_width()/2, y=100)
+        Label(mainframe, text='Productos',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=root.winfo_width()/2, y=100)
         
-        self.productsFrame = ScrollableFrame(mainframe, width=int(root.winfo_width()/2-40), height=300, x=root.winfo_width()/2, y=130)
+        self.productsFrame = ScrollableFrame(mainframe, width=int(root.winfo_width()/2-40), height=300, x=root.winfo_width()/2, y=130, bg=colorBackground)
         self.productsFrame.place(x=root.winfo_width()/2, y=130)
         
         #Requisition Comment
-        Label(mainframe, text='Comentario',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=20, y=450)
-        self.requisitionComment = Text(mainframe, width=int(((root.winfo_width())-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT, height=6)
-        self.requisitionComment.place(x=20, y=480)
+        Label(mainframe, text='Comentario',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=480)
+        self.requisitionComment = Text(mainframe, width=int(((root.winfo_width())-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT, height=6)
+        self.requisitionComment.place(x=20, y=510)
         
         if requisition != None:
             self.updateProductsFrame()
@@ -2746,7 +2754,53 @@ class Inventory():
     def recalculateInventory(self):
         for product in inventory.getProducts():
             product.recalculateQuantity()
- 
+    
+    def pendingProductsWindow(self):
+        global mainFrame
+        clearMainFrame()
+        
+        resources.AddTittle(mainFrame, "Requisiciones", "Productos pendientes de entrega")
+        
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", goBack, "#555555")
+        
+        mainFrame.update()  
+        productsFrame = ScrollableFrame(mainFrame, x=20, y=160, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-180,bg=colorBackground)
+        productsFrame.place()
+        productsList = inventory.getPendingProducts()
+        global imgDescription, imgQuantity, imgDate
+        
+        for product in productsList:
+            frame = Frame(productsFrame.scrollableFrame)
+            frame.config(width=mainFrame.winfo_width()-60, height=150, bg=colorDarkGray)
+            frame.bind('<Button-1>', func_displayRequisition(product.requisitionId, self))
+            frame.pack(pady=10)
+            info = resources.Info(frame, colorDarkGray)
+            info.addData("", product.product.name, imgDescription)
+            info.addData("", (product.product.brand if product.product.brand != None else '')+(' - '+product.product.model if product.product.model != None else ''), imgDescription)
+            info.addData("Cantidad pendiente", product.quantity, imgQuantity)
+            info.addData("Requisición", product.requisitionId, imgDescription)
+            info.addData("", inventory.Requisition(product.requisitionId).date.strftime("%d/%m/%Y"), imgDate)
+       
+    def suppliersMainWindow(self):
+        global mainFrame
+        clearMainFrame()
+        
+        resources.AddTittle(mainFrame, "Proveedores")
+        
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", goBack, "#555555")
+        menu.addButton("Nuevo proveedor", lambda: goNext(self.newSupplierWindow), colorGreen)
+        
+    def newSupplierWindow(self):
+        global mainFrame
+        clearMainFrame()
+        
+        resources.AddTittle(mainFrame, "Nuevo proveedor")
+        
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", goBack, "#555555")
+            
 def func_displayWorkOrder(id, object, previous = None):
     return lambda event: goNext(lambda: object.parent.workorders.displayWorkOrder(id)) 
         

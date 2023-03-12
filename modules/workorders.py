@@ -2,17 +2,9 @@
 """
 
 try:
-    import sql
+    from modules import sql, employers, maintenances
 except:
-    from modules import sql
-try:
-    import employers
-except:
-    from modules import employers
-try:
-    from modules import maintenances
-except:
-    import maintenances
+    import sql, employers, maintenances
 from datetime import date
 from datetime import datetime
 from datetime import timedelta

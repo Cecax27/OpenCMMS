@@ -1,17 +1,15 @@
 try:
-    import sql
+    from modules import sql, pdf
 except:
-    from modules import sql
+    import sql, pdf
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
-try:
-    from modules import pdf
-except:
-    import pdf
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import tensorflow as tf
 import numpy as np
+import pandas as pd
 
 #Const-----
 INPUT = "input"
@@ -131,11 +129,13 @@ class Product():
             times += purchase[1] - purchase[0]
         times = times / len(rawData)
         return times
-        
-    def graphMovements(self):
+    
+    #With ML    
+    """ def graphMovements(self):
+        self.findMovements()
         time = []
         quantity = []
-        time.append(self.movements[len(self.movements)-1].date-timedelta(days=10))
+        time.append(self.movements[-1].date-timedelta(days=10))
         quantity.append(0)
         purchasesTimes = []
         purchasesQuantity = []
@@ -144,7 +144,7 @@ class Product():
             if len(quantity) == 1:
                 quantity.append(mov.quantity)
             else:
-                quantity.append(quantity[len(quantity)-1]+mov.quantity if mov.type == INPUT else quantity[len(quantity)-1]-mov.quantity)
+                quantity.append(quantity[-1]+mov.quantity if mov.type == INPUT else quantity[-1]-mov.quantity)
             if mov.type == INPUT and mov.origin == REQUISITION:
                 purchasesTimes.append(mov.date)
                 purchasesQuantity.append(mov.quantity)
@@ -155,13 +155,126 @@ class Product():
         ax.set_xlabel('Fecha')
         ax.set_ylabel('Cantidad')
         ax.grid(True, color="#cccccc", linestyle='dashed')
-        ax.plot(time, quantity, label='Cantidad de productos', color='#475CA7',drawstyle='steps-post', linewidth=2)
-        time = [datetime.now(), datetime.now()+self.calculateOutputs()]
-        quantity = [quantity[len(quantity)-1], quantity[len(quantity)-1]]
-        while quantity[len(quantity)-1] != 0:
-            time.append(time[len(time)-1]+self.calculateOutputs())
-            quantity.append(quantity[len(quantity)-1]-1)
-        ax.plot(time, quantity, label='Proyección', color='#916AAD',drawstyle='steps', linewidth=2, linestyle='dotted')
+        ax.plot(time, quantity, label='Real', color='#475CA7',drawstyle='steps-post', linewidth=2)
+        
+        data = sql.petition(f"SELECT inventory_detail.date, inventory_detail.quantity FROM inventory_detail WHERE inventory_detail.type = 'output' AND inventory_detail.product_id = {self.id} ORDER BY inventory_detail.date")
+        #dates = np.array([i[0].timetuple().tm_yday+(365 if i[0].year == 2023 else 0) for i in data][0:-1], dtype=float)
+        dates = np.array([to_integer(i[0]) for i in data][0:-1], dtype=float)
+        quantities = np.array([quantity[1] for quantity in data][0:-1], dtype=float)
+        results = np.array([to_integer(i[0]) for i in data][1:], dtype=float)
+        
+        oculta1 = tf.keras.layers.Dense(units=60, input_shape=[2])
+        oculta2 = tf.keras.layers.Dense(units=50)
+        oculta3 = tf.keras.layers.Dense(units=50)
+        salida = tf.keras.layers.Dense(units=1)
+        modelo = tf.keras.Sequential([oculta1, oculta2, oculta3, salida])
+        
+        modelo.compile(
+            optimizer=tf.keras.optimizers.Adam(0.1),
+            loss='mean_squared_error'
+        )
+        
+        historial = modelo.fit(np.stack([ dates, quantities ], axis=1), results, epochs=1000, verbose=False)
+        
+        # plt.xlabel("# Epoca")
+        # plt.ylabel("Magnitud de pérdida")
+        # plt.plot(historial.history["loss"])
+        
+        time = []
+        quantity = []
+        time.append(self.movements[-1].date-timedelta(days=10))
+        quantity.append(0)
+        inputs = iter(list(filter(lambda i: i.type == INPUT, reversed(self.movements))))
+        actualmov = next(inputs)
+        time.append(actualmov.date)
+        quantity.append(actualmov.quantity)
+        actualmov = next(inputs)
+        
+        while(quantity[-1] != 0 or actualmov.date != datetime.strptime('2100 1', '%Y %j')):
+            #prediction = int(modelo.predict(np.stack([[time[-1].timetuple().tm_yday+(365*2 if time[-1].year == 2024 else ( 365 if time[-1].year == 2023 else 0 ) )],[1]], axis=1))[0][0])
+            #predictiondate = datetime.strptime(f"{2024 if prediction > (365 * 2) else ( 2023 if prediction > 365 else 2022 )} { prediction - ( (365 * 2) if prediction > (365 * 2) else ( 365 if prediction > 365 else 0 ) ) }", '%Y %j')
+            predictiondate = to_dt( modelo.predict( np.stack( [ [ to_integer( time[-1] ) ], [1] ], axis=1 ) )[0][0] )
+            if predictiondate < actualmov.date:
+                time.append(predictiondate)
+                if quantity[-1] == 0:
+                    quantity.append(0)
+                else:
+                    quantity.append(quantity[-1]-1)
+            else:
+                time.append(actualmov.date)
+                quantity.append(quantity[-1]+actualmov.quantity)
+                try:
+                    actualmov = next(inputs)
+                except StopIteration: 
+                    actualmov.date = datetime.strptime('2100 1', '%Y %j')
+        
+        #time = [datetime.now(), datetime.now()+self.calculateOutputs()]
+        #quantity = [quantity[len(quantity)-1], quantity[len(quantity)-1]]
+        #while quantity[len(quantity)-1] != 0:
+        #    time.append(time[len(time)-1]+self.calculateOutputs())
+        #    quantity.append(quantity[len(quantity)-1]-1)
+        ax.plot(time, quantity, label='IA', color='#916AAD',drawstyle='steps-post', linewidth=2, linestyle='dotted')
+        ax.plot(purchasesTimes, purchasesQuantity, label='Compras', color='#475CA7', marker='o', linewidth=0)
+        ax.legend()
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%b'))
+        
+        plt.show() """
+        
+    def graphMovements(self):
+        self.findMovements()
+        time = []
+        quantity = []
+        time.append(self.movements[-1].date-timedelta(days=10))
+        quantity.append(0)
+        purchasesTimes = []
+        purchasesQuantity = []
+        for mov in reversed(self.movements):
+            time.append(mov.date)
+            if len(quantity) == 1:
+                quantity.append(mov.quantity)
+            else:
+                quantity.append(quantity[-1]+mov.quantity if mov.type == INPUT else quantity[-1]-mov.quantity)
+            if mov.type == INPUT and mov.origin == REQUISITION:
+                purchasesTimes.append(mov.date)
+                purchasesQuantity.append(mov.quantity)
+        time.append(datetime.now())
+        quantity.append(self.quantity)
+        fig, ax = plt.subplots()
+        ax.set_title(f"Gráfico de {self.name}")
+        ax.set_xlabel('Fecha')
+        ax.set_ylabel('Cantidad')
+        ax.grid(True, color="#cccccc", linestyle='dashed')
+        ax.plot(time, quantity, label='Real', color='#475CA7',drawstyle='steps-post', linewidth=2)
+        
+        distance = self.calculateOutputs()
+        
+        time = []
+        quantity = []
+        time.append(self.movements[-1].date-timedelta(days=10))
+        quantity.append(0)
+        inputs = iter(list(filter(lambda i: i.type == INPUT, reversed(self.movements))))
+        actualmov = next(inputs)
+        time.append(actualmov.date)
+        quantity.append(actualmov.quantity)
+        actualmov = next(inputs)
+        
+        while(quantity[-1] != 0 or actualmov.date != datetime.strptime('2100 1', '%Y %j')):
+            predictiondate = time[-1] + timedelta(seconds = distance * 84600)
+            if predictiondate < actualmov.date:
+                time.append(predictiondate)
+                if quantity[-1] == 0:
+                    quantity.append(0)
+                else:
+                    quantity.append(quantity[-1]-1)
+            else:
+                time.append(actualmov.date)
+                quantity.append(quantity[-1]+actualmov.quantity)
+                try:
+                    actualmov = next(inputs)
+                except StopIteration: 
+                    actualmov.date = datetime.strptime('2100 1', '%Y %j')
+        
+        ax.plot(time, quantity, label='predictions', color='#916AAD',drawstyle='steps-post', linewidth=2, linestyle='dotted')
         ax.plot(purchasesTimes, purchasesQuantity, label='Compras', color='#475CA7', marker='o', linewidth=0)
         ax.legend()
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%b'))
@@ -169,18 +282,24 @@ class Product():
         plt.show()
         
     def calculateOutputs(self):
-        self.findMovements()
+        outputs = []
+        for x in sql.petition('''SELECT date(date), sum(quantity) FROM inventory_detail
+        WHERE product_id = {} AND type = 'output'
+        GROUP BY date(date)
+        ORDER BY date desc'''.format(self.id)):
+            newMov = InventoryMovement()
+            newMov.date = date.fromisoformat(x[0])
+            newMov.quantity = x[1]  
+            outputs.append(newMov)
         distances = []
-        suma = timedelta()
-        for mov in self.movements:
-            if mov.type == OUTPUT:
-                distance = mov.date-self.movements[self.movements.index(mov)-1].date
-                distances.append(distance)
-                suma += abs(distance)
-        if len(distances) == 0:
-            return timedelta()
-        prom = suma/len(distances)
-        return prom
+        for i, mov in enumerate(outputs):
+            if len(outputs) > i+1:
+                distance = (mov.date - outputs[i+1].date) / mov.quantity
+                for x in range(mov.quantity):
+                    distances.append(distance)
+        df_movements = pd.DataFrame({
+            'days':[i.total_seconds() / 86400 for i in distances]})
+        return df_movements.days.median()
     
     def buy(self):
         timeToDontHave = self.calculateOutputs() * self.quantity
@@ -406,9 +525,61 @@ def crearRequisiion():
 def generatePDF(filename):
     pdf.createInventory(filename, [Product(x[0]) for x in sql.petition("SELECT id FROM inventory WHERE quantity > 0")])
 
+def getPendingProducts():
+    """Get the pending products to delivering.
+
+    Returns:
+        list: List of RequisitionDetail objects.
+    """
+    return [RequisitionDetail(id = id[0]) for id in sql.petition("SELECT requisitions_detail.id FROM requisitions_detail LEFT JOIN requisitions ON requisitions_detail.requisition_id = requisitions.id WHERE requisitions_detail.status = 'solicitada' OR requisitions_detail.status = 'confirmada' OR (requisitions_detail.status = 'entregada' AND requisitions_detail.deliveredQuantity = 0 AND requisitions.status = 'entregada parcialmente') ORDER BY requisitions.date ASC")]
+  
+def to_integer(dt_time):
+    dt_delta = dt_time - datetime(2020,1,1)
+    total = datetime(2030,1,1) - datetime(2000,1,1)
+    return dt_delta.days
+
+def to_dt(integer):
+    total = datetime(2030,1,1) - datetime(2020,1,1)
+    dt_time = datetime(2020,1,1) + timedelta(int(integer))
+    return dt_time
+    
 if __name__ == '__main__':
     #checkDatabase()
-    generatePDF('C:/Users/EMMAN/Desktop/Inventario - 24-01-2023.pdf')
-else:
-    map(lambda x: x.recalculateQuantity, getProducts())
+    #print((datetime(2030,1,1) - datetime(2000,1,1)).days)
+    #print(to_integer(datetime.now()))
+    #print(to_dt(to_integer(datetime.now())))
+    Product(1).graphMovements()
+    
+    """ data = sql.petition("SELECT inventory_detail.date, inventory_detail.quantity FROM inventory_detail WHERE inventory_detail.type = 'output' AND inventory_detail.product_id = 19 ORDER BY inventory_detail.date")
+    
+    dates = np.array([i[0].timetuple().tm_yday+(365 if i[0].year == 2023 else 0) for i in data][0:-1], dtype=float)
+    quantities = np.array([quantity[1] for quantity in data][0:-1], dtype=float)
+    results = np.array([i[0].timetuple().tm_yday+(365 if i[0].year == 2023 else 0) for i in data][1:], dtype=float)
+    
+    oculta1 = tf.keras.layers.Dense(units=8, input_shape=[2])
+    oculta2 = tf.keras.layers.Dense(units=4)
+    salida = tf.keras.layers.Dense(units=1)
+    modelo = tf.keras.Sequential([oculta1, oculta2, salida])
+    
+    modelo.compile(
+        optimizer=tf.keras.optimizers.Adam(0.1),
+        loss='mean_squared_error'
+    )
+    
+    print("Comenzando entrenamiento...")
+    historial = modelo.fit(np.stack([dates,quantities], axis=1), results, epochs=100, verbose=False)
+    print("Modelo entrenado!")
+    
+    import matplotlib.pyplot as plt
+    plt.xlabel("# Epoca")
+    plt.ylabel("Magnitud de pérdida")
+    plt.plot(historial.history["loss"])
+    
+    
+    resultado = modelo.predict(np.stack([[287, 299, 309, 309, 319, 326, 326, 333, 335, 343, 357, 361, 388, 395],[1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 4, 2]], axis=1))
+    print(resultado)
+    
+    print(datetime.strptime(f"2023 {406-365}", '%Y %j')) """
+#else:
+#    map(lambda x: x.recalculateQuantity, getProducts())
     

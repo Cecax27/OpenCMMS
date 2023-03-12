@@ -1,9 +1,5 @@
 # -*- coding:utf-8 -*-
 try:
-    import inventory
-except:
-    from modules import inventory
-try:
     from modules import workorders
 except:
     import workorders
@@ -22,7 +18,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT, TA_CENTER
 from reportlab.lib.units import cm
 from reportlab.lib import colors
-from datetime import datetime
 
 styles = getSampleStyleSheet()
 styleN = styles["BodyText"]

@@ -1,23 +1,7 @@
 try:
-    import sql
+    from modules import sql, inventory, activities
 except:
-    from modules import sql
-try:
-    from modules import inventory
-except:
-    import inventory
-try:
-    import plants
-except:
-    from modules import plants
-try:
-    from activities import nuevaActividadAsignada, Activity
-except:
-    from modules.activities import nuevaActividadAsignada, Activity
-try:
-    import pdf
-except:
-    from modules import pdf
+    import sql, inventory, activities
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
@@ -77,7 +61,7 @@ class Maintenance:
                         agregarActividad(self.id, findCorrectiveActivity(plant.id))
                         print(f"Plant Id {plant.id} added")
                     else:
-                        nuevaActividadAsignada('Mantenimiento correctivo', 'Se corrigió alguna falla en el equipo', 2, plant.id)
+                        activities.nuevaActividadAsignada('Mantenimiento correctivo', 'Se corrigió alguna falla en el equipo', 2, plant.id)
                         agregarActividad(self.id, findCorrectiveActivity(plant.id))
                         print(f"Plant Id {plant.id} added")
             elif self.type == Preventive:
@@ -149,7 +133,7 @@ class Maintenance:
             self.activities = []
             self.plants = []
             for i in sql.petition(f"SELECT * FROM mantenimientos_actividadesAsignadas WHERE mantenimientoId = {id}"):
-                self.activities.append(Activity(id = i[2], assigned = True))
+                self.activities.append(activities.Activity(id = i[2], assigned = True))
             for activity in self.activities:
                 if self.activities.index(activity) == 0:
                     self.plants.append(activity.plant)
@@ -167,14 +151,14 @@ class Maintenance:
         elif self.type == Corrective: #If is a corrective maintenance
             self.plants = []
             for i in sql.petition(f"SELECT * FROM mantenimientos_actividadesAsignadas WHERE mantenimientoId = {id}"):
-                self.plants.append(Activity(id = i[2], assigned = True).plant)
+                self.plants.append(activities.Activity(id = i[2], assigned = True).plant)
         self.repeat = rawData[6]
         self.previous = rawData[7]
         self.next = rawData[8]
         self.products = findProducts(self.id)
         return 0
     
-    def addMovement(self, productId = 0, product = None, quantity = 0, type = inventory.OUTPUT, comment = None):
+    def addMovement(self, productId = 0, product = None, quantity = 0, type = 'output', comment = None):
         newMov = inventory.InventoryMovement()
         newMov.product = productId if productId != 0 else product.id
         newMov.date = datetime.combine(self.date, datetime.min.time())
