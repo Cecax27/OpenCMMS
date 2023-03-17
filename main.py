@@ -119,10 +119,9 @@ def clearMainFrame():
   
     mainFrame.destroy()
     mainFrame = customtkinter.CTkFrame(master = root)
-    mainFrame.configure(
-        width=root.winfo_width()*0.89,
-        height=root.winfo_height())
-    mainFrame.grid(column=1, row=0)
+    mainFrame.grid(column=1, row=0, columnspan=2, rowspan=3, padx=(20,20), pady=(20,20), sticky='nsew')
+    mainFrame.grid_columnconfigure(1, weight=1)
+    mainFrame.grid_rowconfigure((0, 1, 2), weight=1)
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -162,7 +161,7 @@ class App(customtkinter.CTk):
         barraMenu = BarraMenu(self)
 
         global mainFrame
-        mainFrame = Frame(self)
+        mainFrame = customtkinter.CTkFrame(self)
 
         self.mainframe = mainFrame
         clearMainFrame()
