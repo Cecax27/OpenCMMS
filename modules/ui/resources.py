@@ -1,5 +1,6 @@
 from tkinter import *
 import tkinter.ttk as ttk
+import customtkinter
 # Botón
 #Button(mainFrame, text='+ Agregar equipo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.nuevo).place(x=10, y=450)
 
@@ -20,15 +21,18 @@ class Menu:
         
     def addButton(self, text, command,):
 
-        self.buttons.append(Button(self.menuFrame, 
-            text=text,
-            font=("Segoe UI", "10", "bold"),
-            bg=self.backgroundColor,
-            fg=self.foregroundColor, activeforeground= self.foregroundColor,
-            bd=0, activebackground= self.backgroundColor,
-            highlightthickness=0,
-            borderwidth=5,
-            relief=FLAT,
+        self.buttons.append(customtkinter.CTkButton(
+            master = self.menuFrame, 
+            text = text,
+            #font = ("Segoe UI", "10", "bold"),
+            #bg=self.backgroundColor,
+            #fg=self.foregroundColor, 
+            # activeforeground= self.foregroundColor,
+            #bd=0, 
+            #activebackground= self.backgroundColor,
+            #highlightthickness=0,
+            #borderwidth=5,
+            #relief=FLAT,
             command=command,
             anchor="w", cursor='hand2'
             ))
@@ -40,26 +44,31 @@ class sectionMenu:
         self.backgroundColor = backgroundColor
         self.foregroundColor = foregroundColor
         self.width = int(master.winfo_width()-40)
-        self.backgroundFrame = Frame(master)
-        self.backgroundFrame.config(width=self.width, height=70, bg=self.backgroundColor)
+        self.backgroundFrame = customtkinter.CTkFrame(master)
+        self.backgroundFrame.configure(width=self.width, height=70)
         self.backgroundFrame.place(x=20, y=80)
         #self.menuFrame = Frame(self.backgroundFrame, bg=self.backgroundColor)
         #self.menuFrame.pack(fill = 'both', expand=True)
         self.buttons = []
         
     def addButton(self, text, command, backgroundColor = "#37abc8"):
-
-        self.buttons.append(Button(self.backgroundFrame, 
+        newButton = customtkinter.CTkButton(
+            master = self.backgroundFrame, 
             text=text,
-            font=("Segoe UI", "10", "normal"),
-            bg=backgroundColor,
-            fg=self.foregroundColor, activeforeground= self.foregroundColor,
-            bd=0, activebackground= backgroundColor,
-            highlightthickness=0,
-            borderwidth=2,
-            relief=FLAT,
-            command=command, padx=10, cursor='hand2'
-            ))
+            font=("Segoe UI", 12),
+            #bg=backgroundColor,
+            #fg=self.foregroundColor, activeforeground= self.foregroundColor,
+            #bd=0, activebackground= backgroundColor,
+            #highlightthickness=0,
+            #borderwidth=2,
+            #relief=FLAT,
+            command=command, 
+            #padx=10, 
+            cursor='hand2'
+            )
+        if backgroundColor != "#37abc8":
+            newButton.configure(fg_color = backgroundColor)
+        self.buttons.append(newButton)
         self.buttons[len(self.buttons)-1].grid(row = 0, column = len(self.buttons)-1, padx=5)
         
 class sectionNavigation:
@@ -68,8 +77,8 @@ class sectionNavigation:
         self.backgroundColor = backgroundColor
         self.foregroundColor = foregroundColor
         self.width = int(master.winfo_width()-40)
-        self.backgroundFrame = Frame(master)
-        self.backgroundFrame.config(width=self.width, height=40, bg=self.backgroundColor)
+        self.backgroundFrame = customtkinter.CTkFrame(master)
+        self.backgroundFrame.configure(width=self.width, height=40)
         self.backgroundFrame.place(x=20, y=master.winfo_height()-40)
         self.buttons = []
         self.page = IntVar(master)
@@ -189,6 +198,9 @@ class Info(sectionInfo):
         self.data = []
         
 def AddTittle(mainFrame, tittleText, subtittleText = None) -> None:
-    Label(mainFrame, text=tittleText, bg="#f2f2f2", font=("Segoe UI", "12", "bold")).place(x=20, y=20)
+    customtkinter.CTkLabel(master = mainFrame, text=tittleText,
+                           #bg="#f2f2f2", 
+                           font=("Segoe UI Bold", 16, "bold")
+                           ).place(x=20, y=20)
     if(subtittleText):
         Label(mainFrame, text=subtittleText, bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=20, y=50)

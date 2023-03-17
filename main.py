@@ -3,6 +3,7 @@ from math import prod
 from msilib.schema import ComboBox
 import textwrap
 from tkinter import *
+import customtkinter
 from tkinter.filedialog import asksaveasfile
 import tkinter.ttk as ttk
 from tkinter import messagebox
@@ -114,8 +115,8 @@ def clearMainFrame():
     imgTime = PhotoImage(file="img/time.png").subsample(3)
   
     mainFrame.destroy()
-    mainFrame = Frame(root)
-    mainFrame.config(bg=colorBackground,
+    mainFrame = customtkinter.CTkFrame(master = root)
+    mainFrame.configure(
         width=root.winfo_width()*0.89,
         height=root.winfo_height())
     mainFrame.grid(column=1, row=0)
@@ -125,10 +126,14 @@ class Crm:
     def __init__(self):
         #Root----------------------
         global root
-        root = Tk()
+        customtkinter.set_appearance_mode("light")
+        customtkinter.set_default_color_theme("blue")
+        root = customtkinter.CTk()
         self.root = root
         self.root.state('zoomed') #abrir maximizado
         self.root.title('Gestión de Mantenimiento Emman')
+        icon = PhotoImage(file = "img/maintenance.png")
+        self.root.iconphoto(True, icon)
 
         #Objetos--------
         self.objetoDepartamentos = Departamentos()
@@ -310,6 +315,12 @@ class Crm:
         btGuardar = Button(self.frame, text='Guardar', command= self.empleadosGuardar).grid(column=0, row=6)
         btCancelar = Button(self.frame, text='Cancelar', command=self.ventana.destroy).grid(column=1, row=6)
 
+theme = 'light'
+def change_appearance_mode_event():
+    global theme
+    customtkinter.set_appearance_mode('dark' if theme == 'light' else 'light')
+    theme = 'dark' if theme == 'light' else 'light'
+
 class BarraMenu(Crm):
 
     def __init__(self, padre):
@@ -319,7 +330,13 @@ class BarraMenu(Crm):
 
         #Objetos menu
         filemenu = Menu(self.menubar)
+        
         editmenu = Menu(self.menubar)
+        
+        editmenu_preferences = Menu(self.menubar, tearoff= 0)
+        editmenu_preferences.add_command(label='Tema oscuro/claro', command = change_appearance_mode_event)
+        
+        editmenu.add_cascade(label='Preferencias', menu=editmenu_preferences)
 
         #Menú areas----------------
         menuAreas = Menu(self.menubar, tearoff=0)
@@ -1178,7 +1195,7 @@ class Maintenances(Crm):
         global root
         
         clearMainFrame()
-        resources.AddTittle(mainFrame, "Matenimientos")
+        resources.AddTittle(mainFrame, "Mantenimientos")
         menu = resources.sectionMenu(mainFrame)
         menu.addButton("Ordenes de trabajo", lambda: goNext(self.parent.workorders.workOrdersMainWindow))
         menu.addButton("+ Mantenimiento preventivo", lambda: goNext(self.newPreventiveWindow), colorGreen)
@@ -1188,7 +1205,7 @@ class Maintenances(Crm):
         menu.addButton("Estadísticas", lambda: goNext(self.statistics))
 
         #Programmed maintenances
-        Label(mainFrame, text='Mantenimientos atrasados', bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=180)
+        customtkinter.CTkLabel(mainFrame, text='Mantenimientos atrasados', font=("Segoe UI", 14, "normal")).place(x=20, y=180)
         
         lista = maintenances.find(overdue=True)
         
@@ -1305,32 +1322,32 @@ class Maintenances(Crm):
             self.varRepeat.set(1) if self.newMaintenance.repeat != None else self.varRepeat.set(0)
 
         #Date
-        Label(mainFrame, text='Fecha', bg=colorBackground, font=("Segoe UI", "10", "normal")).place(x=10, y=130)
+        customtkinter.CTkLabel(mainFrame, text='Fecha', font=("Segoe UI", 14, "normal")).place(x=10, y=130)
         today = datetime.now() if not maintenance else maintenance.date
         self.cal = Calendar(mainFrame, font=("Segoe UI", "9", "normal"),background=colorBackground, selectmode='day', year=int(today.strftime('%Y')), month = int(today.strftime('%m')), day = int(today.strftime('%d')), showweeknumbers=False, foreground= colorBlack, bordercolor=colorWhite, headersbackground=colorWhite, headersforeground= colorBlack, selectbackground=colorBlue, weekendbackground=colorWhite, weekendforeground=colorBlack, selectforeground=colorGray, normalbackground=colorWhite, normalforeground=colorBlack, othermonthbackground=colorGray, othermonthweforeground=colorBlack)
         self.cal.place(x=10, y=160)
 
         #Estado------------
         self.listaEstados=[maintenances.Done, maintenances.Programmed]
-        Label(mainFrame, text='Estado', bg=colorBackground, font=("Segoe UI", "10", "normal")).place(x=10, y=340)
-        self.estado = ttk.Combobox(mainFrame, state='readonly',values=self.listaEstados)
+        customtkinter.CTkLabel(mainFrame, text='Estado').place(x=10, y=340)
+        self.estado = customtkinter.CTkOptionMenu(mainFrame,values=self.listaEstados)
         self.estado.place(x=10, y=370)
 
         #Responsible
-        Label(mainFrame, text='Responsable', bg=colorBackground, font=("Segoe UI", "10", "normal")).place(x=10, y=400)
-        self.responsible = ttk.Combobox(mainFrame, state = 'readonly', values = employers.ver('nombre'))
+        customtkinter.CTkLabel(mainFrame, text='Responsable').place(x=10, y=400)
+        self.responsible = customtkinter.CTkOptionMenu(mainFrame, values = employers.ver('nombre'))
         self.responsible.place(x=10, y=430)
 
         #Repeat
-        self.repeatOn = Checkbutton(mainFrame, bg=colorBackground, text="Repetir cada", font=("Segoe UI", "10", "normal"), variable=self.varRepeat, onvalue=1, offvalue=0)
+        self.repeatOn = customtkinter.CTkSwitch(mainFrame, text="Repetir cada", variable=self.varRepeat, onvalue=1, offvalue=0)
         self.repeatOn.place(x=10, y=460)
-        self.repeat = Entry(mainFrame, width=5, highlightthickness=2)
-        self.repeat.place(x=120, y=460)
-        Label(mainFrame, text='días', bg=colorBackground, font=("Segoe UI", "10", "normal")).place(x=160, y=460)
+        self.repeat = customtkinter.CTkEntry(mainFrame, width=10)
+        self.repeat.place(x=140, y=460)
+        customtkinter.CTkLabel(mainFrame, text='días').place(x=180, y=460)
 
         #Description
-        Label(mainFrame, text='Descripción', bg=colorBackground, font=("Segoe UI", "10", "normal")).place(x=10, y=490)
-        self.description = Text(mainFrame, width=40, height=9, font=("Segoe UI", "9", "normal"), borderwidth=2, relief=FLAT, highlightbackground="#777777", highlightthickness=1)
+        customtkinter.CTkLabel(mainFrame, text='Descripción').place(x=10, y=490)
+        self.description = customtkinter.CTkTextbox(mainFrame, width=200, height=200)
         self.description.place(x=10, y=520)
 
         #Department
