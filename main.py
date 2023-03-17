@@ -30,6 +30,9 @@ import numpy as np
 
 #locale.setlocale(locale.LC_ALL, 'es-ES')
 
+customtkinter.set_appearance_mode("light")
+customtkinter.set_default_color_theme("blue")
+
 #Constantes-----
 colorGreen = '#37c842'
 colorRed = '#c83737'
@@ -121,19 +124,22 @@ def clearMainFrame():
         height=root.winfo_height())
     mainFrame.grid(column=1, row=0)
 
-class Crm:
-
+class App(customtkinter.CTk):
     def __init__(self):
+        super().__init__()
         #Root----------------------
-        global root
-        customtkinter.set_appearance_mode("light")
-        customtkinter.set_default_color_theme("blue")
-        root = customtkinter.CTk()
-        self.root = root
-        self.root.state('zoomed') #abrir maximizado
-        self.root.title('Gestión de Mantenimiento Emman')
+        self.title('Gestión de Mantenimiento Emman')
+        self.state('zoomed') #abrir maximizado
         icon = PhotoImage(file = "img/maintenance.png")
-        self.root.iconphoto(True, icon)
+        self.iconphoto(True, icon)
+        
+        global root
+        root = self
+        
+        #Configure grid layout--------------
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure((2, 3), weight=0)
+        self.grid_rowconfigure((0, 1, 2), weight=1)
 
         #Objetos--------
         self.objetoDepartamentos = Departamentos()
@@ -146,7 +152,7 @@ class Crm:
         self.workorders = WorkOrders(self)
 
         #Menu---------------------
-        self.menu = resources.Menu(root, backgroundColor="#666666") 
+        self.menu = resources.Menu(self) 
 
         self.menu.addButton("Mantenimientos", lambda: goNext(self.objetoMantenimientos.maintenancesMainWindow))
         self.menu.addButton("Inventario", lambda: goNext(self.inventory.inventoryMainWindow))
@@ -156,7 +162,7 @@ class Crm:
         barraMenu = BarraMenu(self)
 
         global mainFrame
-        mainFrame = Frame(self.root)
+        mainFrame = Frame(self)
 
         self.mainframe = mainFrame
         clearMainFrame()
@@ -321,12 +327,12 @@ def change_appearance_mode_event():
     customtkinter.set_appearance_mode('dark' if theme == 'light' else 'light')
     theme = 'dark' if theme == 'light' else 'light'
 
-class BarraMenu(Crm):
+class BarraMenu(App):
 
     def __init__(self, padre):
 
-        self.menubar = Menu(padre.root)
-        padre.root.config(menu=self.menubar)
+        self.menubar = Menu(padre)
+        padre.config(menu=self.menubar)
 
         #Objetos menu
         filemenu = Menu(self.menubar)
@@ -694,11 +700,11 @@ class Areas():
 def func_displayPlant(id, object, previous):
     return lambda event: goNext(lambda: object.parent.objetoEquipos.displayPlant(id))
 
-class Plants(Crm):
+class Plants(App):
 
     def __init__(self, padre):
         self.parent = padre
-        self.root = padre.root
+        self.root = padre
 
     def plantsMainWindow(self):
         global mainFrame
@@ -1184,7 +1190,7 @@ class Actividades():
 def func_displayMaintenance(id, object, previous = None):
     return lambda event = None: goNext(lambda: object.parent.objetoMantenimientos.displayMaintenance(id) )
 
-class Maintenances(Crm):
+class Maintenances(App):
     def __init__(self, padre):
         self.padre = padre
         self.parent = padre
@@ -2823,9 +2829,9 @@ def func_displayWorkOrder(id, object, previous = None):
         
 class WorkOrders:
     
-    def __init__(self, crm) -> None:
+    def __init__(self, App) -> None:
         global root
-        self.parent = crm
+        self.parent = App
     
     def workOrdersMainWindow(self):
         global mainFrame
@@ -3018,6 +3024,6 @@ class WorkOrders:
         
 if __name__ == '__main__':
     sql.checkDatabase()
-    aplicacion = Crm()
-    #aplicacion.objetoMantenimientos.statistics()
-    root.mainloop()
+    
+    app = App()
+    app.mainloop()

@@ -6,37 +6,39 @@ import customtkinter
 
 class Menu:
     
-    def __init__(self, root, backgroundColor = "#555555", foregroundColor = "#eeeeee") -> None:
+    def __init__(self, root) -> None:
+        self.sidebar_frame = customtkinter.CTkFrame(root, width=140, corner_radius=0)
+        self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky='nsew')
+        self.sidebar_frame.grid_rowconfigure(4, weight=1)
+        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Emman", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
         
-        root.update()
-        self.backgroundColor = backgroundColor
-        self.foregroundColor = foregroundColor
-        self.width = int(root.winfo_width()*0.11)
-        self.backgroundFrame = Frame(root)
-        self.backgroundFrame.config(width=self.width, height=root.winfo_height(), bg=self.backgroundColor)
-        self.backgroundFrame.grid(column=0, row=0, sticky='nswe')
-        self.menuFrame = Frame(self.backgroundFrame, bg=self.backgroundColor)
-        self.menuFrame.pack(fill = 'both', expand=True)
         self.buttons = []
         
-    def addButton(self, text, command,):
+        self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Tema:", anchor="w")
+        self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
+        self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"], command=self.change_appearance_mode_event)
+        self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 10))
+        self.scaling_label = customtkinter.CTkLabel(self.sidebar_frame, text="UI Scaling:", anchor="w")
+        self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
+        self.scaling_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["80%", "90%", "100%", "110%", "120%"], command=self.change_scaling_event)
+        self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(10, 20))
+        
+    def addButton(self, text, command):
 
         self.buttons.append(customtkinter.CTkButton(
-            master = self.menuFrame, 
+            master = self.sidebar_frame, 
             text = text,
-            #font = ("Segoe UI", "10", "bold"),
-            #bg=self.backgroundColor,
-            #fg=self.foregroundColor, 
-            # activeforeground= self.foregroundColor,
-            #bd=0, 
-            #activebackground= self.backgroundColor,
-            #highlightthickness=0,
-            #borderwidth=5,
-            #relief=FLAT,
             command=command,
-            anchor="w", cursor='hand2'
             ))
-        self.buttons[len(self.buttons)-1].grid(column = 0, row = len(self.buttons)-1, sticky = 'ew', pady=5)
+        self.buttons[len(self.buttons)-1].grid(column = 0, row = len(self.buttons), padx=20, pady=10)
+        
+    def change_appearance_mode_event(self, new_appearance_mode: str):
+        customtkinter.set_appearance_mode(new_appearance_mode)
+    
+    def change_scaling_event(self, new_scaling: str):
+        new_scaling_float = int(new_scaling.replace("%", "")) / 100
+        customtkinter.set_widget_scaling(new_scaling_float)
         
 class sectionMenu:
     def __init__(self, master, backgroundColor = "#f2f2f2", foregroundColor = "#f2f2f2") -> None:
