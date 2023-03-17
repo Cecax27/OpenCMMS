@@ -4,16 +4,20 @@ import customtkinter
 # Botón
 #Button(mainFrame, text='+ Agregar equipo',font=("Noto Sans", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.nuevo).place(x=10, y=450)
 
+
+
 class Menu:
     
     def __init__(self, root) -> None:
-        self.sidebar_frame = customtkinter.CTkFrame(root, width=140, corner_radius=0)
-        self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky='nsew')
+        self.sidebar_frame = customtkinter.CTkFrame(root, corner_radius=0)
+        self.sidebar_frame.grid(row=0, column=0, sticky='nsew')
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
+        
         self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Emman", font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        self.logo_label.grid(row=0, column=0, padx=20, pady=20)
         
         self.buttons = []
+        self.buttons_names = []
         
         self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Tema:", anchor="w")
         self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
@@ -27,11 +31,19 @@ class Menu:
     def addButton(self, text, command):
 
         self.buttons.append(customtkinter.CTkButton(
-            master = self.sidebar_frame, 
+            master = self.sidebar_frame,
+            corner_radius=0,
+            height=40,
+            border_spacing=10,
+            fg_color='transparent',
+            text_color=("gray10", "gray90"), 
+            hover_color=("gray70", "gray30"),
+            anchor="w", 
             text = text,
             command=command,
             ))
-        self.buttons[len(self.buttons)-1].grid(column = 0, row = len(self.buttons), padx=20, pady=10)
+        self.buttons_names.append(text)
+        self.buttons[len(self.buttons)-1].grid(column = 0, row = len(self.buttons), sticky='ew')
         
     def change_appearance_mode_event(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
@@ -42,15 +54,8 @@ class Menu:
         
 class sectionMenu:
     def __init__(self, master, backgroundColor = "#f2f2f2", foregroundColor = "#f2f2f2") -> None:
-        master.update()
-        self.backgroundColor = backgroundColor
-        self.foregroundColor = foregroundColor
-        self.width = int(master.winfo_width()-40)
         self.backgroundFrame = customtkinter.CTkFrame(master)
-        self.backgroundFrame.configure(width=self.width, height=70)
-        self.backgroundFrame.place(x=20, y=80)
-        #self.menuFrame = Frame(self.backgroundFrame, bg=self.backgroundColor)
-        #self.menuFrame.pack(fill = 'both', expand=True)
+        self.backgroundFrame.grid(column = 0, row=1, pady=(0,0), padx=(20,20), sticky='new')
         self.buttons = []
         
     def addButton(self, text, command, backgroundColor = "#37abc8"):
@@ -71,7 +76,7 @@ class sectionMenu:
         if backgroundColor != "#37abc8":
             newButton.configure(fg_color = backgroundColor)
         self.buttons.append(newButton)
-        self.buttons[len(self.buttons)-1].grid(row = 0, column = len(self.buttons)-1, padx=5)
+        self.buttons[len(self.buttons)-1].grid(row = 0, column = len(self.buttons)-1, padx=10, pady=10, sticky='nsw')
         
 class sectionNavigation:
     def __init__(self, master, pages, command, textLeft, textRight, backgroundColor = "#f2f2f2", foregroundColor = "#f2f2f2") -> None:
@@ -198,11 +203,25 @@ class Info(sectionInfo):
         self.backgroundFrame.config(width=self.width, bg = self.backgroundColor)
         self.backgroundFrame.place(x=20, y=20)
         self.data = []
+   
+class Title(customtkinter.CTkLabel):
+    def __init__(self, master, **kwargs):   
+        super().__init__(master, **kwargs)
+        self.configure(font = customtkinter.CTkFont(family = "Segoe UI", size = 16, weight = 'bold'))
+        
+class Metric(customtkinter.CTkLabel):
+    def __init__(self, master, **kwargs):   
+        super().__init__(master, **kwargs)
+        self.configure(font = customtkinter.CTkFont(family = "Segoe UI", size = 36))
+        
         
 def AddTittle(mainFrame, tittleText, subtittleText = None) -> None:
-    customtkinter.CTkLabel(master = mainFrame, text=tittleText,
-                           #bg="#f2f2f2", 
+    frame = customtkinter.CTkFrame(mainFrame)
+    frame.grid(column=0, row=0, padx=(20,20), pady=(20,10), sticky='new')
+    frame.grid_columnconfigure(1, weight=1)
+    frame.grid_rowconfigure((0, 1), weight=1)
+    customtkinter.CTkLabel(master = frame, text=tittleText,
                            font=("Segoe UI Bold", 16, "bold")
-                           ).place(x=20, y=20)
+                           ).grid(row=0, column=1, padx=(20,0), pady=(10,10), sticky='nws')
     if(subtittleText):
-        Label(mainFrame, text=subtittleText, bg="#f2f2f2", font=("Segoe UI", "10", "bold")).place(x=20, y=50)
+        customtkinter.CTkLabel(frame, text=subtittleText, font=("Segoe UI", "10", "bold")).grid(row=1, column=1, padx=(20,0), pady=(20,20), sticky='nws')

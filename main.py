@@ -118,10 +118,10 @@ def clearMainFrame():
     imgTime = PhotoImage(file="img/time.png").subsample(3)
   
     mainFrame.destroy()
-    mainFrame = customtkinter.CTkFrame(master = root)
+    mainFrame = customtkinter.CTkFrame(master = root, corner_radius=0, fg_color='transparent')
     mainFrame.grid(column=1, row=0, columnspan=2, rowspan=3, padx=(20,20), pady=(20,20), sticky='nsew')
-    mainFrame.grid_columnconfigure(1, weight=1)
-    mainFrame.grid_rowconfigure((0, 1, 2), weight=1)
+    mainFrame.grid_columnconfigure(0, weight=1)
+    mainFrame.grid_rowconfigure(2, weight=1)
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -137,8 +137,7 @@ class App(customtkinter.CTk):
         
         #Configure grid layout--------------
         self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure((2, 3), weight=0)
-        self.grid_rowconfigure((0, 1, 2), weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
         #Objetos--------
         self.objetoDepartamentos = Departamentos()
@@ -153,9 +152,9 @@ class App(customtkinter.CTk):
         #Menu---------------------
         self.menu = resources.Menu(self) 
 
-        self.menu.addButton("Mantenimientos", lambda: goNext(self.objetoMantenimientos.maintenancesMainWindow))
-        self.menu.addButton("Inventario", lambda: goNext(self.inventory.inventoryMainWindow))
-        self.menu.addButton("Empleados", lambda: goNext(self.objetoEmpleados.employersMainWindow))
+        self.menu.addButton("Mantenimientos", lambda: self.select_frame_by_name('Mantenimientos'))
+        self.menu.addButton("Inventario", lambda: self.select_frame_by_name('Inventario'))
+        self.menu.addButton("Empleados", lambda: self.select_frame_by_name('Empleados'))
 
         global barraMenu
         barraMenu = BarraMenu(self)
@@ -165,7 +164,19 @@ class App(customtkinter.CTk):
 
         self.mainframe = mainFrame
         clearMainFrame()
-
+        
+        self.select_frame_by_name('Mantenimientos')
+    
+    def select_frame_by_name(self, name):
+        # set button color for selected button
+        for index, button in enumerate(self.menu.buttons):
+            button.configure(fg_color=("gray75", "gray25") if name == self.menu.buttons_names[index] else "transparent")
+        if name == 'Mantenimientos':    
+            goNext(self.objetoMantenimientos.maintenancesMainWindow)
+        elif name == 'Inventario':
+            goNext(self.inventory.inventoryMainWindow)
+        elif name == 'Empleados':
+            goNext(self.objetoEmpleados.employersMainWindow)
     def actividades(self):
         clearMainFrame()
 
@@ -1196,10 +1207,9 @@ class Maintenances(App):
         global mainFrame
         
     def maintenancesMainWindow(self):
-        global mainFrame
         global root
-        
-        clearMainFrame()
+        global mainFrame
+    
         resources.AddTittle(mainFrame, "Mantenimientos")
         menu = resources.sectionMenu(mainFrame)
         menu.addButton("Ordenes de trabajo", lambda: goNext(self.parent.workorders.workOrdersMainWindow))
@@ -1210,35 +1220,21 @@ class Maintenances(App):
         menu.addButton("Estadísticas", lambda: goNext(self.statistics))
 
         #Programmed maintenances
-        customtkinter.CTkLabel(mainFrame, text='Mantenimientos atrasados', font=("Segoe UI", 14, "normal")).place(x=20, y=180)
+        frame = customtkinter.CTkScrollableFrame(mainFrame, fg_color='transparent')
+        frame.grid(column=0, row=2, padx=(20, 20), pady=(20, 20),sticky='nswe')
+        frame.grid_columnconfigure((0,1), weight=1)
         
-        lista = maintenances.find(overdue=True)
+        programmed_maintenances = customtkinter.CTkFrame(frame)
+        programmed_maintenances.grid(column = 0, row = 0, pady=10, padx=10)
+        resources.Title(programmed_maintenances, text = 'Mantenimientos programados').grid(column=0, row=0, pady=10, padx=10)
+        resources.Metric(programmed_maintenances, text = sql.petition('SELECT COUNT(id) FROM mantenimientos WHERE estado = "Programado"'), text_color=(colorBlue, colorBlue)).grid(column=0, row=2, pady=(0,10), padx=10)
         
-        overdueMaintenancesFrame = ScrollableFrame(mainFrame, width = mainFrame.winfo_width()-40, height = mainFrame.winfo_height()-230, bg=colorBackground, x=20, y=210)
-        overdueMaintenancesFrame.place(x=20, y=210)
-
-        for i in lista:
-            mant = Frame(overdueMaintenancesFrame.scrollableFrame)
-            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=mainFrame.winfo_width()-60, height=100)
-            mant.bind('<Button-1>', func_displayMaintenance(i.id, self, self.maintenancesMainWindow))
-            mant.pack(pady=10, padx=15)
-            Frame(mant, bg=colorRed, height=100, width=3).place(x=0, y=0)
-            #Titular
-            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
-            #Date
-            Label(mant, text=i.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
-            #Status
-            if i.status == 'Realizado' or i.status == 'Realizado Programado':
-                color = colorGreen
-            elif i.status == 'Programado':
-                color = colorBlue
-            elif i.status == 'Cancelado':
-                color = colorRed
-            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=mainFrame.winfo_width()-255, y=10)
-            #type
-            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=140, y=30)
-            #Descripción
-            Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
+        overdue_maintenances = customtkinter.CTkFrame(frame)
+        overdue_maintenances.grid(column = 1, row = 0, pady=10, padx=10)
+        resources.Title(overdue_maintenances, text = 'Mantenimientos atrasados').grid(column=0, row=0, pady=10, padx=10)
+        resources.Metric(overdue_maintenances, text = sql.petition('SELECT COUNT(id) FROM mantenimientos WHERE estado = "Programado" AND fecha < date("now")'), text_color=(colorRed, colorRed)).grid(column=0, row=2, pady=(0,10), padx=10)
+        
+        
 
     def allMaintenancesWindow(self):
         global mainFrame
