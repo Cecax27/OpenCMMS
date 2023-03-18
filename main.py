@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import numpy as np
+import webbrowser   
 
 #locale.setlocale(locale.LC_ALL, 'es-ES')
 
@@ -329,9 +330,10 @@ class BarraMenu(Crm):
         padre.root.config(menu=self.menubar)
 
         #Objetos menu
-        filemenu = Menu(self.menubar)
+        filemenu = Menu(self.menubar, tearoff=0)
+        filemenu.add_command(label='Salir', command = padre.root.destroy)
         
-        editmenu = Menu(self.menubar)
+        editmenu = Menu(self.menubar, tearoff=0)
         
         editmenu_preferences = Menu(self.menubar, tearoff= 0)
         editmenu_preferences.add_command(label='Tema oscuro/claro', command = change_appearance_mode_event)
@@ -391,7 +393,8 @@ class BarraMenu(Crm):
         inventoryMenu.add_cascade(label='Requisiciones', menu=requisitionMenu)
         
         
-        helpmenu = Menu(self.menubar)
+        helpmenu = Menu(self.menubar, tearoff=0)
+        helpmenu.add_command(label='Abrir repositorio en GitHub', command = lambda: webbrowser.open('https://github.com/Cecax27/OpenCMMS'))
         
         #Etiquetas
         self.menubar.add_cascade(label="Archivo", menu=filemenu)
