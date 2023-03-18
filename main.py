@@ -130,18 +130,8 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         #Root----------------------
-<<<<<<< HEAD
         self.title('OpenCMMS')
         self.state('zoomed') #abrir maximizado
-=======
-        global root
-        customtkinter.set_appearance_mode("light")
-        customtkinter.set_default_color_theme("blue")
-        root = customtkinter.CTk()
-        self.root = root
-        self.root.state('zoomed') #abrir maximizado
-        self.root.title('OpenCMMS')
->>>>>>> dev-menu
         icon = PhotoImage(file = "img/maintenance.png")
         self.iconphoto(True, icon)
         
@@ -359,7 +349,7 @@ class BarraMenu(App):
 
         #Objetos menu
         filemenu = Menu(self.menubar, tearoff=0)
-        filemenu.add_command(label='Salir', command = padre.root.destroy)
+        filemenu.add_command(label='Salir', command = padre.destroy)
         
         editmenu = Menu(self.menubar, tearoff=0)
         
