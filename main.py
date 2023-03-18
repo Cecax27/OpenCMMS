@@ -27,10 +27,11 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import numpy as np
+from PIL import Image
 
 #locale.setlocale(locale.LC_ALL, 'es-ES')
 
-customtkinter.set_appearance_mode("light")
+customtkinter.set_appearance_mode("system")
 customtkinter.set_default_color_theme("blue")
 
 #Constantes-----
@@ -100,7 +101,7 @@ def clearMainFrame():
     global mainFrame
     global root
     
-    global imgCorrective, imgPreventive, imgIn, imgOut, imgDate, imgPerson, imgDescription, imgMaintenance, imgPlant, imgPreventive2, imgRepeat, imgTask, imgStatus, imgQuantity, imgTime
+    global imgOpen, imgCorrective, imgPreventive, imgIn, imgOut, imgDate, imgPerson, imgDescription, imgMaintenance, imgPlant, imgPreventive2, imgRepeat, imgTask, imgStatus, imgQuantity, imgTime
     imgCorrective = PhotoImage(file='img/corrective.png').subsample(8)
     imgPreventive = PhotoImage(file='img/preventive.png').subsample(8)
     imgIn = PhotoImage(file='img/in.png')
@@ -116,6 +117,7 @@ def clearMainFrame():
     imgStatus = PhotoImage(file="img/status.png").subsample(3)
     imgQuantity = PhotoImage(file="img/quantity.png").subsample(3)
     imgTime = PhotoImage(file="img/time.png").subsample(3)
+    imgOpen = customtkinter.CTkImage(light_image=Image.open('img/open.png'), size=(15, 15))
   
     mainFrame.destroy()
     mainFrame = customtkinter.CTkFrame(master = root, corner_radius=0, fg_color='transparent')
@@ -2820,7 +2822,7 @@ class Inventory():
         menu.addButton("Atrás", goBack, "#555555")
             
 def func_displayWorkOrder(id, object, previous = None):
-    return lambda event: goNext(lambda: object.parent.workorders.displayWorkOrder(id)) 
+    return lambda: goNext(lambda: object.parent.workorders.displayWorkOrder(id)) 
         
 class WorkOrders:
     
@@ -2839,25 +2841,26 @@ class WorkOrders:
         
         workOrdersList = workorders.getAll(orderby='date', order='DESC')
         
-        workordersFrame = ScrollableFrame(mainFrame, x=20, y=180, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-180, bg=colorBackground)
-        workordersFrame.place(x=0, y=0)
+        workordersFrame = customtkinter.CTkScrollableFrame(mainFrame)
+        workordersFrame.grid(column = 0, row = 2, padx=20, pady=(10,20), sticky = 'news')
         
-        Label(mainFrame, text='Id', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=20, y=150)
-        Label(mainFrame, text='Fecha', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=90, y=150)
-        Label(mainFrame, text='Estado', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=270, y=150)
-        Label(mainFrame, text='Descripción', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=370, y=150)
+        titlesFrame = customtkinter.CTkFrame(workordersFrame)
+        titlesFrame.grid(column = 0, columnspan = 5, row = 0, pady=5, padx=5, sticky = 'news')
+        customtkinter.CTkLabel(titlesFrame, text='', font=("Segoe UI", 14, "bold"), width = 28).grid(column = 0, row = 0, padx=(0,10))
+        customtkinter.CTkLabel(titlesFrame, text='Id', font=("Segoe UI", 14, "bold"), width = 20).grid(column = 1, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Fecha', font=("Segoe UI", 14, "bold"), width = 100).grid(column = 2, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Estado', font=("Segoe UI", 14, "bold"), width = 100).grid(column = 3, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Descripción', font=("Segoe UI", 14, "bold")).grid(column = 4, row = 0)
         
-        for work in workOrdersList:
-            reqNumber = workOrdersList.index(work)
-            backColor = colorGray if reqNumber%2==0 else colorDarkGray
-            frame = Frame(workordersFrame.scrollableFrame)
-            frame.config(width=root.winfo_width()-80, height=30, bg=backColor, cursor='hand2')
-            frame.bind('<Button-1>', func_displayWorkOrder(work.id, self, self.workOrdersMainWindow))
-            frame.pack(pady=1)
-            Label(frame, text=work.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
-            Label(frame, text=datetime.date(work.date).strftime("%d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
-            Label(frame, text=workorders.LANGUAGE[work.status].capitalize(), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=260, y=4)
-            Label(frame, text=work.comment, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=360, y=4)
+        global imgOpen
+        for reqNumber, work in enumerate(workOrdersList):
+            workFrame = customtkinter.CTkFrame(workordersFrame)
+            workFrame.grid(column = 0, columnspan = 5, row = reqNumber + 1, pady=5, padx=5, sticky = 'news')
+            customtkinter.CTkButton(workFrame, image = imgOpen, text = '', width = 24, height = 24, command = func_displayWorkOrder(work.id, self, self.workOrdersMainWindow)).grid(column = 0, row = 0, padx=(0,10))
+            customtkinter.CTkLabel(workFrame, text=work.id, font=("Segoe UI", 12, "normal"), width=20).grid(column = 1, row = 0)
+            customtkinter.CTkLabel(workFrame, text=datetime.date(work.date).strftime("%d %B %Y"), font=("Segoe UI", 12, "normal"), width=100).grid(column = 2, row = 0)
+            customtkinter.CTkLabel(workFrame, text=workorders.LANGUAGE[work.status].capitalize(), font=("Segoe UI", 12, "normal"), width=100).grid(column = 3, row = 0)
+            customtkinter.CTkLabel(workFrame, text=work.comment.replace('\n', ''), font=("Segoe UI", 12, "normal"), justify = 'left', anchor = 'w').grid(column = 4, row = 0)
     
     def displayWorkOrder(self, id):
         global mainFrame
