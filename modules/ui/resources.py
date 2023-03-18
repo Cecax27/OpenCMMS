@@ -13,7 +13,7 @@ class Menu:
         self.sidebar_frame.grid(row=0, column=0, sticky='nsew')
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
         
-        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Emman", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="OpenCMMS", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=20)
         
         self.buttons = []

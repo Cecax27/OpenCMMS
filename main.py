@@ -127,7 +127,7 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         #Root----------------------
-        self.title('Gestión de Mantenimiento Emman')
+        self.title('OpenCMMS')
         self.state('zoomed') #abrir maximizado
         icon = PhotoImage(file = "img/maintenance.png")
         self.iconphoto(True, icon)
