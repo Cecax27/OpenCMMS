@@ -131,7 +131,7 @@ class Crm:
         root = customtkinter.CTk()
         self.root = root
         self.root.state('zoomed') #abrir maximizado
-        self.root.title('Gestión de Mantenimiento Emman')
+        self.root.title('OpenCMMS')
         icon = PhotoImage(file = "img/maintenance.png")
         self.root.iconphoto(True, icon)
 
