@@ -340,7 +340,7 @@ def change_appearance_mode_event():
     customtkinter.set_appearance_mode('dark' if theme == 'light' else 'light')
     theme = 'dark' if theme == 'light' else 'light'
 
-class BarraMenu(App):
+class BarraMenu():
 
     def __init__(self, padre):
 
