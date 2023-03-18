@@ -28,6 +28,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import numpy as np
 from PIL import Image
+import webbrowser   
 
 #locale.setlocale(locale.LC_ALL, 'es-ES')
 
@@ -129,8 +130,18 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         #Root----------------------
+<<<<<<< HEAD
         self.title('OpenCMMS')
         self.state('zoomed') #abrir maximizado
+=======
+        global root
+        customtkinter.set_appearance_mode("light")
+        customtkinter.set_default_color_theme("blue")
+        root = customtkinter.CTk()
+        self.root = root
+        self.root.state('zoomed') #abrir maximizado
+        self.root.title('OpenCMMS')
+>>>>>>> dev-menu
         icon = PhotoImage(file = "img/maintenance.png")
         self.iconphoto(True, icon)
         
@@ -347,9 +358,10 @@ class BarraMenu(App):
         padre.config(menu=self.menubar)
 
         #Objetos menu
-        filemenu = Menu(self.menubar)
+        filemenu = Menu(self.menubar, tearoff=0)
+        filemenu.add_command(label='Salir', command = padre.root.destroy)
         
-        editmenu = Menu(self.menubar)
+        editmenu = Menu(self.menubar, tearoff=0)
         
         editmenu_preferences = Menu(self.menubar, tearoff= 0)
         editmenu_preferences.add_command(label='Tema oscuro/claro', command = change_appearance_mode_event)
@@ -409,7 +421,8 @@ class BarraMenu(App):
         inventoryMenu.add_cascade(label='Requisiciones', menu=requisitionMenu)
         
         
-        helpmenu = Menu(self.menubar)
+        helpmenu = Menu(self.menubar, tearoff=0)
+        helpmenu.add_command(label='Abrir repositorio en GitHub', command = lambda: webbrowser.open('https://github.com/Cecax27/OpenCMMS'))
         
         #Etiquetas
         self.menubar.add_cascade(label="Archivo", menu=filemenu)
