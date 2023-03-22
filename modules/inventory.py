@@ -7,7 +7,6 @@ from datetime import datetime
 from datetime import timedelta
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import tensorflow as tf
 import numpy as np
 import pandas as pd
 

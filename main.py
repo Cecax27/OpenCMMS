@@ -27,8 +27,13 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import numpy as np
+from PIL import Image
+import webbrowser   
 
 #locale.setlocale(locale.LC_ALL, 'es-ES')
+
+customtkinter.set_appearance_mode("system")
+customtkinter.set_default_color_theme("blue")
 
 #Constantes-----
 colorGreen = '#37c842'
@@ -97,7 +102,7 @@ def clearMainFrame():
     global mainFrame
     global root
     
-    global imgCorrective, imgPreventive, imgIn, imgOut, imgDate, imgPerson, imgDescription, imgMaintenance, imgPlant, imgPreventive2, imgRepeat, imgTask, imgStatus, imgQuantity, imgTime
+    global imgOpen, imgCorrective, imgPreventive, imgIn, imgOut, imgDate, imgPerson, imgDescription, imgMaintenance, imgPlant, imgPreventive2, imgRepeat, imgTask, imgStatus, imgQuantity, imgTime
     imgCorrective = PhotoImage(file='img/corrective.png').subsample(8)
     imgPreventive = PhotoImage(file='img/preventive.png').subsample(8)
     imgIn = PhotoImage(file='img/in.png')
@@ -113,27 +118,29 @@ def clearMainFrame():
     imgStatus = PhotoImage(file="img/status.png").subsample(3)
     imgQuantity = PhotoImage(file="img/quantity.png").subsample(3)
     imgTime = PhotoImage(file="img/time.png").subsample(3)
+    imgOpen = customtkinter.CTkImage(light_image=Image.open('img/open.png'), size=(15, 15))
   
     mainFrame.destroy()
-    mainFrame = customtkinter.CTkFrame(master = root)
-    mainFrame.configure(
-        width=root.winfo_width()*0.89,
-        height=root.winfo_height())
-    mainFrame.grid(column=1, row=0)
+    mainFrame = customtkinter.CTkFrame(master = root, corner_radius=0, fg_color='transparent')
+    mainFrame.grid(column=1, row=0, columnspan=2, rowspan=3, padx=(20,20), pady=(20,20), sticky='nsew')
+    mainFrame.grid_columnconfigure(0, weight=1)
+    mainFrame.grid_rowconfigure(2, weight=1)
 
-class Crm:
-
+class App(customtkinter.CTk):
     def __init__(self):
+        super().__init__()
         #Root----------------------
-        global root
-        customtkinter.set_appearance_mode("light")
-        customtkinter.set_default_color_theme("blue")
-        root = customtkinter.CTk()
-        self.root = root
-        self.root.state('zoomed') #abrir maximizado
-        self.root.title('OpenCMMS')
+        self.title('OpenCMMS')
+        self.state('zoomed') #abrir maximizado
         icon = PhotoImage(file = "img/maintenance.png")
-        self.root.iconphoto(True, icon)
+        self.iconphoto(True, icon)
+        
+        global root
+        root = self
+        
+        #Configure grid layout--------------
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
         #Objetos--------
         self.objetoDepartamentos = Departamentos()
@@ -146,21 +153,33 @@ class Crm:
         self.workorders = WorkOrders(self)
 
         #Menu---------------------
-        self.menu = resources.Menu(root, backgroundColor="#666666") 
+        self.menu = resources.Menu(self) 
 
-        self.menu.addButton("Mantenimientos", lambda: goNext(self.objetoMantenimientos.maintenancesMainWindow))
-        self.menu.addButton("Inventario", lambda: goNext(self.inventory.inventoryMainWindow))
-        self.menu.addButton("Empleados", lambda: goNext(self.objetoEmpleados.employersMainWindow))
+        self.menu.addButton("Mantenimientos", lambda: self.select_frame_by_name('Mantenimientos'))
+        self.menu.addButton("Inventario", lambda: self.select_frame_by_name('Inventario'))
+        self.menu.addButton("Empleados", lambda: self.select_frame_by_name('Empleados'))
 
         global barraMenu
         barraMenu = BarraMenu(self)
 
         global mainFrame
-        mainFrame = Frame(self.root)
+        mainFrame = customtkinter.CTkFrame(self)
 
         self.mainframe = mainFrame
         clearMainFrame()
-
+        
+        self.select_frame_by_name('Mantenimientos')
+    
+    def select_frame_by_name(self, name):
+        # set button color for selected button
+        for index, button in enumerate(self.menu.buttons):
+            button.configure(fg_color=("gray75", "gray25") if name == self.menu.buttons_names[index] else "transparent")
+        if name == 'Mantenimientos':    
+            goNext(self.objetoMantenimientos.maintenancesMainWindow)
+        elif name == 'Inventario':
+            goNext(self.inventory.inventoryMainWindow)
+        elif name == 'Empleados':
+            goNext(self.objetoEmpleados.employersMainWindow)
     def actividades(self):
         clearMainFrame()
 
@@ -321,17 +340,18 @@ def change_appearance_mode_event():
     customtkinter.set_appearance_mode('dark' if theme == 'light' else 'light')
     theme = 'dark' if theme == 'light' else 'light'
 
-class BarraMenu(Crm):
+class BarraMenu():
 
     def __init__(self, padre):
 
-        self.menubar = Menu(padre.root)
-        padre.root.config(menu=self.menubar)
+        self.menubar = Menu(padre)
+        padre.config(menu=self.menubar)
 
         #Objetos menu
-        filemenu = Menu(self.menubar)
+        filemenu = Menu(self.menubar, tearoff=0)
+        filemenu.add_command(label='Salir', command = padre.destroy)
         
-        editmenu = Menu(self.menubar)
+        editmenu = Menu(self.menubar, tearoff=0)
         
         editmenu_preferences = Menu(self.menubar, tearoff= 0)
         editmenu_preferences.add_command(label='Tema oscuro/claro', command = change_appearance_mode_event)
@@ -391,7 +411,8 @@ class BarraMenu(Crm):
         inventoryMenu.add_cascade(label='Requisiciones', menu=requisitionMenu)
         
         
-        helpmenu = Menu(self.menubar)
+        helpmenu = Menu(self.menubar, tearoff=0)
+        helpmenu.add_command(label='Abrir repositorio en GitHub', command = lambda: webbrowser.open('https://github.com/Cecax27/OpenCMMS'))
         
         #Etiquetas
         self.menubar.add_cascade(label="Archivo", menu=filemenu)
@@ -694,11 +715,11 @@ class Areas():
 def func_displayPlant(id, object, previous):
     return lambda event: goNext(lambda: object.parent.objetoEquipos.displayPlant(id))
 
-class Plants(Crm):
+class Plants(App):
 
     def __init__(self, padre):
         self.parent = padre
-        self.root = padre.root
+        self.root = padre
 
     def plantsMainWindow(self):
         global mainFrame
@@ -1184,17 +1205,16 @@ class Actividades():
 def func_displayMaintenance(id, object, previous = None):
     return lambda event = None: goNext(lambda: object.parent.objetoMantenimientos.displayMaintenance(id) )
 
-class Maintenances(Crm):
+class Maintenances(App):
     def __init__(self, padre):
         self.padre = padre
         self.parent = padre
         global mainFrame
         
     def maintenancesMainWindow(self):
-        global mainFrame
         global root
-        
-        clearMainFrame()
+        global mainFrame
+    
         resources.AddTittle(mainFrame, "Mantenimientos")
         menu = resources.sectionMenu(mainFrame)
         menu.addButton("Ordenes de trabajo", lambda: goNext(self.parent.workorders.workOrdersMainWindow))
@@ -1205,35 +1225,21 @@ class Maintenances(Crm):
         menu.addButton("Estadísticas", lambda: goNext(self.statistics))
 
         #Programmed maintenances
-        customtkinter.CTkLabel(mainFrame, text='Mantenimientos atrasados', font=("Segoe UI", 14, "normal")).place(x=20, y=180)
+        frame = customtkinter.CTkScrollableFrame(mainFrame, fg_color='transparent')
+        frame.grid(column=0, row=2, padx=(20, 20), pady=(20, 20),sticky='nswe')
+        frame.grid_columnconfigure((0,1), weight=1)
         
-        lista = maintenances.find(overdue=True)
+        programmed_maintenances = customtkinter.CTkFrame(frame)
+        programmed_maintenances.grid(column = 0, row = 0, pady=10, padx=10)
+        resources.Title(programmed_maintenances, text = 'Mantenimientos programados').grid(column=0, row=0, pady=10, padx=10)
+        resources.Metric(programmed_maintenances, text = sql.petition('SELECT COUNT(id) FROM mantenimientos WHERE estado = "Programado"'), text_color=(colorBlue, colorBlue)).grid(column=0, row=2, pady=(0,10), padx=10)
         
-        overdueMaintenancesFrame = ScrollableFrame(mainFrame, width = mainFrame.winfo_width()-40, height = mainFrame.winfo_height()-230, bg=colorBackground, x=20, y=210)
-        overdueMaintenancesFrame.place(x=20, y=210)
-
-        for i in lista:
-            mant = Frame(overdueMaintenancesFrame.scrollableFrame)
-            mant.config(bg=colorGray, highlightthickness=0, highlightbackground="#eeeeee", width=mainFrame.winfo_width()-60, height=100)
-            mant.bind('<Button-1>', func_displayMaintenance(i.id, self, self.maintenancesMainWindow))
-            mant.pack(pady=10, padx=15)
-            Frame(mant, bg=colorRed, height=100, width=3).place(x=0, y=0)
-            #Titular
-            Label(mant, text='Mantenimiento ID '+str(i.id), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "bold"), wraplength=300, justify='left').place(x=10, y=10)
-            #Date
-            Label(mant, text=i.date.strftime('%d/%m/%Y'), fg='#111111', bg=colorGray, font=("Segoe UI", "8", "normal")).place(x=10, y=30)
-            #Status
-            if i.status == 'Realizado' or i.status == 'Realizado Programado':
-                color = colorGreen
-            elif i.status == 'Programado':
-                color = colorBlue
-            elif i.status == 'Cancelado':
-                color = colorRed
-            Label(mant, text=i.status, fg=color, bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, anchor="e", width=20).place(x=mainFrame.winfo_width()-255, y=10)
-            #type
-            Label(mant, text='Matenimiento '+i.type, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "bold")).place(x=140, y=30)
-            #Descripción
-            Label(mant, text=i.description, fg='#333333', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=root.winfo_width()/2-190, justify='left').place(x=10, y=50)
+        overdue_maintenances = customtkinter.CTkFrame(frame)
+        overdue_maintenances.grid(column = 1, row = 0, pady=10, padx=10)
+        resources.Title(overdue_maintenances, text = 'Mantenimientos atrasados').grid(column=0, row=0, pady=10, padx=10)
+        resources.Metric(overdue_maintenances, text = sql.petition('SELECT COUNT(id) FROM mantenimientos WHERE estado = "Programado" AND fecha < date("now")'), text_color=(colorRed, colorRed)).grid(column=0, row=2, pady=(0,10), padx=10)
+        
+        
 
     def allMaintenancesWindow(self):
         global mainFrame
@@ -2819,13 +2825,13 @@ class Inventory():
         menu.addButton("Atrás", goBack, "#555555")
             
 def func_displayWorkOrder(id, object, previous = None):
-    return lambda event: goNext(lambda: object.parent.workorders.displayWorkOrder(id)) 
+    return lambda: goNext(lambda: object.parent.workorders.displayWorkOrder(id)) 
         
 class WorkOrders:
     
-    def __init__(self, crm) -> None:
+    def __init__(self, App) -> None:
         global root
-        self.parent = crm
+        self.parent = App
     
     def workOrdersMainWindow(self):
         global mainFrame
@@ -2838,25 +2844,26 @@ class WorkOrders:
         
         workOrdersList = workorders.getAll(orderby='date', order='DESC')
         
-        workordersFrame = ScrollableFrame(mainFrame, x=20, y=180, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-180, bg=colorBackground)
-        workordersFrame.place(x=0, y=0)
+        workordersFrame = customtkinter.CTkScrollableFrame(mainFrame)
+        workordersFrame.grid(column = 0, row = 2, padx=20, pady=(10,20), sticky = 'news')
         
-        Label(mainFrame, text='Id', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=20, y=150)
-        Label(mainFrame, text='Fecha', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=90, y=150)
-        Label(mainFrame, text='Estado', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=270, y=150)
-        Label(mainFrame, text='Descripción', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=370, y=150)
+        titlesFrame = customtkinter.CTkFrame(workordersFrame)
+        titlesFrame.grid(column = 0, columnspan = 5, row = 0, pady=5, padx=5, sticky = 'news')
+        customtkinter.CTkLabel(titlesFrame, text='', font=("Segoe UI", 14, "bold"), width = 28).grid(column = 0, row = 0, padx=(0,10))
+        customtkinter.CTkLabel(titlesFrame, text='Id', font=("Segoe UI", 14, "bold"), width = 20).grid(column = 1, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Fecha', font=("Segoe UI", 14, "bold"), width = 100).grid(column = 2, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Estado', font=("Segoe UI", 14, "bold"), width = 100).grid(column = 3, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Descripción', font=("Segoe UI", 14, "bold")).grid(column = 4, row = 0)
         
-        for work in workOrdersList:
-            reqNumber = workOrdersList.index(work)
-            backColor = colorGray if reqNumber%2==0 else colorDarkGray
-            frame = Frame(workordersFrame.scrollableFrame)
-            frame.config(width=root.winfo_width()-80, height=30, bg=backColor, cursor='hand2')
-            frame.bind('<Button-1>', func_displayWorkOrder(work.id, self, self.workOrdersMainWindow))
-            frame.pack(pady=1)
-            Label(frame, text=work.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
-            Label(frame, text=datetime.date(work.date).strftime("%d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
-            Label(frame, text=workorders.LANGUAGE[work.status].capitalize(), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=260, y=4)
-            Label(frame, text=work.comment, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=360, y=4)
+        global imgOpen
+        for reqNumber, work in enumerate(workOrdersList):
+            workFrame = customtkinter.CTkFrame(workordersFrame)
+            workFrame.grid(column = 0, columnspan = 5, row = reqNumber + 1, pady=5, padx=5, sticky = 'news')
+            customtkinter.CTkButton(workFrame, image = imgOpen, text = '', width = 24, height = 24, command = func_displayWorkOrder(work.id, self, self.workOrdersMainWindow)).grid(column = 0, row = 0, padx=(0,10))
+            customtkinter.CTkLabel(workFrame, text=work.id, font=("Segoe UI", 12, "normal"), width=20).grid(column = 1, row = 0)
+            customtkinter.CTkLabel(workFrame, text=datetime.date(work.date).strftime("%d %B %Y"), font=("Segoe UI", 12, "normal"), width=100).grid(column = 2, row = 0)
+            customtkinter.CTkLabel(workFrame, text=workorders.LANGUAGE[work.status].capitalize(), font=("Segoe UI", 12, "normal"), width=100).grid(column = 3, row = 0)
+            customtkinter.CTkLabel(workFrame, text=work.comment.replace('\n', ''), font=("Segoe UI", 12, "normal"), justify = 'left', anchor = 'w').grid(column = 4, row = 0)
     
     def displayWorkOrder(self, id):
         global mainFrame
