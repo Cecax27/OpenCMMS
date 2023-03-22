@@ -209,6 +209,11 @@ class Title(customtkinter.CTkLabel):
         super().__init__(master, **kwargs)
         self.configure(font = customtkinter.CTkFont(family = "Segoe UI", size = 16, weight = 'bold'))
         
+class Subtitle(customtkinter.CTkLabel):
+    def __init__(self, master, **kwargs):   
+        super().__init__(master, **kwargs)
+        self.configure(font = customtkinter.CTkFont(family = "Segoe UI", size = 15, weight = 'normal'))
+        
 class Metric(customtkinter.CTkLabel):
     def __init__(self, master, **kwargs):   
         super().__init__(master, **kwargs)

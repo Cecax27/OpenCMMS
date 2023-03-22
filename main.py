@@ -2014,37 +2014,34 @@ class Empleados():
         
         employerList = employers.getAll() 
         
-        employerFrame = ScrollableFrame(mainFrame, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-150, x=20, y=130, bg=colorBackground)
-        employerFrame.place(x=10, y=40)
-        
-        frameQuantity = int((mainFrame.winfo_width()-40)/300)
-        frameSeparation = int(((mainFrame.winfo_width()-40)%300)/(frameQuantity*2))
+        employerFrame = customtkinter.CTkScrollableFrame(mainFrame, fg_color='transparent')
+        employerFrame.grid(column=0, row=2, padx=(20, 20), pady=(20, 20),sticky='nswe')
+        employerFrame.grid_columnconfigure((0,1), weight=1)
         
         for employer in employerList:
-            actualFrame = Frame(employerFrame.scrollableFrame)
-            actualFrame.config(bg=colorGray, highlightthickness=0, width=300, height=200)
+            actualFrame = customtkinter.CTkFrame(employerFrame)
             actualFrame.bind('<Button-1>', createFunctionToDisplayEmployer(employer.id, self))
-            actualFrame.grid(column=employerList.index(employer)%frameQuantity, row=int(employerList.index(employer)/frameQuantity), padx=frameSeparation, pady=10)
+            actualFrame.grid(column=employerList.index(employer)%2, row=int(employerList.index(employer)/2), padx=10, pady=10, sticky = 'news')
             
             #Name
-            Label(actualFrame, text=employer.name, fg='#111111', bg=colorGray, font=("Segoe UI", "10", "bold"), wraplength=300, justify='left').place(x=20, y=20)
+            resources.Title(actualFrame, text=employer.name).grid(column=0, row=0, pady=10, padx=10)
             
             #Key
-            Label(actualFrame, text=employer.key, fg='#444444', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='left').place(x=20, y=40)
+            resources.Subtitle(actualFrame, text=employer.key).grid(column=0, row=1, padx=10, pady=(0,10))
             
             #Pending maintenances
             pendingMaintenances = len(maintenances.findPendingMaintenances(employerId= employer.id))
             textColor= colorBlue
-            Label(actualFrame, text=pendingMaintenances, fg=textColor, bg=colorGray, font=("Segoe UI", "16", "normal"), wraplength=300, justify='center').place(x=65, y=90, anchor=CENTER)
-            Label(actualFrame, text='Mantenimientos\nprogramados', fg='#666666', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='center').place(x=65, y=120, anchor=CENTER)
+            resources.Metric(actualFrame, text=pendingMaintenances, ).grid(column=1, row=0, padx=10, pady=10)
+            customtkinter.CTkLabel(actualFrame, text='Mantenimientos\nprogramados', font=("Segoe UI", 10, "normal")).grid(column=1, row=1, padx=10, pady=(0,10))
             
             #Overdue maintenances
             overdueMaintenances = len(maintenances.findOverdueMaintenances(employerId= employer.id))
             if overdueMaintenances == 0: textColor = colorGreen
             elif overdueMaintenances < 3: textColor = colorBlue
             else: textColor = colorRed
-            Label(actualFrame, text=overdueMaintenances, fg=textColor, bg=colorGray, font=("Segoe UI", "16", "normal"), wraplength=300, justify='center').place(x=215, y=90, anchor=CENTER)
-            Label(actualFrame, text='Mantenimientos\natrasados', fg='#666666', bg=colorGray, font=("Segoe UI", "8", "normal"), wraplength=300, justify='center').place(x=215, y=120, anchor=CENTER)
+            resources.Metric(actualFrame, text=overdueMaintenances).grid(column=2, row=0, padx=10, pady=10)
+            customtkinter.CTkLabel(actualFrame, text='Mantenimientos\natrasados', font=("Segoe UI", 10, "normal")).grid(column=2, row=1, padx=10, pady=(0,10))
             
     def displayEmployer(self, id):
         clearMainFrame()

@@ -3,3 +3,4 @@ database.db
 modules/__pycache__/*
 *.pyc
 .vscode/
+*.log
