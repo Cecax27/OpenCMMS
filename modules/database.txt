@@ -1,0 +1,213 @@
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS "empleados" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"clave"	INTEGER,
+	"nombre"	TEXT,
+	PRIMARY KEY('id' AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "equipos" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"nombre"	TEXT,
+	"descripcion"	TEXT,
+	"area"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "actividades" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"nombre"	TEXT,
+	"descripcion"	TEXT,
+	"tiempo"	REAL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "departamentos" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"nombre"	TEXT,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "actividadesAsignadas" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"nombre"	TEXT,
+	"descripcion"	TEXT,
+	"tiempo"	INTEGER,
+	"idEquipo"	INTEGER,
+	PRIMARY KEY("id"),
+	FOREIGN KEY("idEquipo") REFERENCES "equipos"("id")
+);
+CREATE TABLE IF NOT EXISTS "mantenimientos_actividadesAsignadas" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"mantenimientoId"	INTEGER,
+	"actividadesId"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("mantenimientoId") REFERENCES "mantenimientos"("id"),
+	FOREIGN KEY("actividadesId") REFERENCES "actividadesAsignadas"("id")
+);
+CREATE TABLE IF NOT EXISTS "category" (
+	"id"	INTEGER NOT NULL,
+	"name"	TEXT NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "inventory" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"name"	TEXT NOT NULL,
+	"category"	INTEGER,
+	"description"	TEXT NOT NULL,
+	"brand"	TEXT,
+	"model"	TEXT,
+	"quantity"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("category") REFERENCES "category"("id")
+);
+CREATE TABLE IF NOT EXISTS "tools" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"name"	TEXT NOT NULL,
+	"description"	TEXT,
+	"brand"	TEXT,
+	"model"	TEXT,
+	"quantity"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "tools_detail" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"tool_id"	INTEGER NOT NULL,
+	"employer_id"	INTEGER NOT NULL,
+	"quantity"	INTEGER NOT NULL,
+	"comment"	TEXT,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("tool_id") REFERENCES "tools"("id"),
+	FOREIGN KEY("employer_id") REFERENCES "empleados"("id")
+);
+CREATE TABLE IF NOT EXISTS "areas" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"nombre"	TEXT NOT NULL,
+	"descripcion"	TEXT,
+	"responsable"	INTEGER NOT NULL,
+	"departamento"	INTEGER NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("departamento") REFERENCES "departamentos"("id"),
+	FOREIGN KEY("responsable") REFERENCES "empleados"("id")
+);
+CREATE TABLE IF NOT EXISTS "inventory_detail" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"date"	timestamp NOT NULL,
+	"type"	TEXT NOT NULL,
+	"product_id"	INTEGER NOT NULL,
+	"quantity"	INTEGER NOT NULL,
+	"comment"	TEXT,
+	"origin"	TEXT,
+	"origin_id"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("product_id") REFERENCES "inventory"("id")
+);
+CREATE TABLE IF NOT EXISTS "requisitions_detail" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"requisition_id"	INTEGER NOT NULL,
+	"product_id"	INTEGER NOT NULL,
+	"quantity"	INTEGER NOT NULL,
+	"comment"	TEXT,
+	"status"	TEXT NOT NULL,
+	"deliveredQuantity"	INTEGER,
+	"deliveredDate"	TIMESTAMP,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("product_id") REFERENCES "inventory"("id"),
+	FOREIGN KEY("requisition_id") REFERENCES "requisitions"("id")
+);
+CREATE TABLE IF NOT EXISTS "requisitions" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"date"	TIMESTAMP NOT NULL,
+	"status"	TEXT NOT NULL,
+	"description"	TEXT,
+	"delivered"	TIMESTAMP,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "mantenimientos" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"fecha"	TIMESTAMP NOT NULL,
+	"estado"	TEXT NOT NULL,
+	"responsable"	INTEGER NOT NULL,
+	"comentario"	TEXT,
+	"tipo"	TEXT NOT NULL,
+	"tiempoProgramado"	INTEGER,
+	"anteriorId"	INTEGER,
+	"siguienteId"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("anteriorId") REFERENCES "mantenimientos"("id"),
+	FOREIGN KEY("responsable") REFERENCES "empleados"("id"),
+	FOREIGN KEY("siguienteId") REFERENCES "mantenimientos"("id")
+);
+CREATE TABLE IF NOT EXISTS "workorders" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"date"	TIMESTAMP NOT NULL,
+	"status"	TEXT NOT NULL,
+	"responsible"	INTEGER NOT NULL,
+	"comment"	TEXT,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("responsible") REFERENCES "empleados"("id")
+);
+CREATE TABLE IF NOT EXISTS "workorders_detail" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"workorder_id"	INTEGER NOT NULL,
+	"maintenance_id"	INTEGER NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("maintenance_id") REFERENCES "mantenimientos"("id"),
+	FOREIGN KEY("workorder_id") REFERENCES "workorders"("id")
+);
+CREATE TABLE IF NOT EXISTS "suppliers" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"name"	TEXT NOT NULL UNIQUE,
+	"contact_name"	TEXT,
+	"contact_phone"	NUMERIC UNIQUE,
+	"contact_email"	TEXT UNIQUE,
+	"adress"	TEXT UNIQUE,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "market_rates" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"product_id"	INTEGER NOT NULL,
+	"supplier_id"	INTEGER NOT NULL,
+	"date"	DATETIME NOT NULL,
+	"price"	REAL NOT NULL,
+	"quantity"	INTEGER NOT NULL DEFAULT 1,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("supplier_id") REFERENCES "suppliers"("id"),
+	FOREIGN KEY("product_id") REFERENCES "inventory"("id")
+);
+CREATE VIEW v_plants_maintenances AS
+SELECT equipos.nombre as nombre, areas.nombre as area, areas.departamento as department, COUNT(equipos.nombre) as mantenimientos FROM mantenimientos 
+	LEFT JOIN mantenimientos_actividadesAsignadas 
+		ON mantenimientos.id = mantenimientos_actividadesAsignadas.mantenimientoId 
+	LEFT JOIN actividadesAsignadas 
+		ON mantenimientos_actividadesAsignadas.actividadesId = actividadesAsignadas.id 
+	LEFT JOIN equipos 
+		ON actividadesAsignadas.idEquipo = equipos.id 
+	LEFT JOIN areas 
+		ON equipos.area = areas.id 
+	WHERE mantenimientos.estado = 'Realizado' 
+		AND mantenimientos.tipo = 'Correctivo' 
+ 	GROUP BY actividadesAsignadas.idEquipo
+ 	ORDER BY mantenimientos DESC;
+CREATE VIEW v_products AS
+SELECT inventory.name as Producto, 
+	inventory.brand as Marca, 
+	inventory.model as Modelo,
+	requisitions_detail.requisition_id as 'ID Requisición', 
+	date(requisitions.date) as Fecha,
+	requisitions_detail.quantity as Cantidad
+FROM requisitions_detail
+LEFT JOIN inventory
+	ON requisitions_detail.product_id = inventory.id
+LEFT JOIN requisitions
+	ON requisitions_detail.requisition_id = requisitions.id
+WHERE requisitions_detail.status = 'solicitada' OR requisitions_detail.status = 'confirmada'
+	OR (requisitions_detail.status = 'entregada' AND requisitions_detail.deliveredQuantity = 0 AND requisitions.status = 'entregada parcialmente')
+ORDER BY requisitions.date ASC;
+CREATE VIEW v_maintenances AS
+SELECT mantenimientos.id AS id, mantenimientos.fecha AS date, mantenimientos.comentario AS description, mantenimientos.estado AS status, empleados.nombre as responsible, 
+mantenimientos.tipo AS type, mantenimientos.anteriorId AS previous, mantenimientos.siguienteId AS next, 
+departamentos.nombre AS department, areas.nombre AS area, equipos.nombre AS plant, actividadesAsignadas.nombre AS activity
+FROM mantenimientos
+LEFT JOIN empleados ON empleados.id = mantenimientos.responsable
+LEFT JOIN mantenimientos_actividadesAsignadas ON mantenimientos_actividadesAsignadas.mantenimientoId = mantenimientos.id
+LEFT JOIN actividadesAsignadas ON actividadesAsignadas.id = mantenimientos_actividadesAsignadas.actividadesId
+LEFT JOIN equipos ON equipos.id = actividadesAsignadas.idEquipo
+LEFT JOIN areas ON areas.id = equipos.area
+LEFT JOIN departamentos ON departamentos.id = areas.departamento;

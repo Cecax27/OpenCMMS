@@ -1,60 +1,21 @@
 import sqlite3 as sql
+import logging
 
-db = 'database.db'
+db = __file__.replace('modules\\sql.py', 'database.db')
+logging.basicConfig(filename = __file__.replace('modules\\sql.py', 'errors.log'), level = logging.INFO)
 
 def checkDatabase():
-    peticion('''CREATE TABLE IF NOT EXISTS "workorders" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"date"	TIMESTAMP NOT NULL,
-	"status"	TEXT NOT NULL,
-	"responsible"	INTEGER NOT NULL,
-	"comment"	TEXT,
-	FOREIGN KEY("responsible") REFERENCES "empleados"("id"),
-	PRIMARY KEY("id" AUTOINCREMENT)
-	);''')
-    
-    peticion('''CREATE TABLE IF NOT EXISTS "workorders_detail" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"workorder_id"	INTEGER NOT NULL,
-	"maintenance_id"	INTEGER NOT NULL,
-	FOREIGN KEY("workorder_id") REFERENCES "workorders"("id"),
-	FOREIGN KEY("maintenance_id") REFERENCES "mantenimientos"("id"),
-	PRIMARY KEY("id" AUTOINCREMENT)
-	);''')
-    
-    peticion('''CREATE TABLE IF NOT EXISTS "requisitions" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"date"	TIMESTAMP NOT NULL,
-	"status"	TEXT NOT NULL,
-	"description"	TEXT,
- 	"delivered"	TIMESTAMP,
-	PRIMARY KEY("id" AUTOINCREMENT)
-	);''')
-    
-    peticion('''CREATE TABLE IF NOT EXISTS "requisitions_detail" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"requisition_id"	INTEGER NOT NULL,
-	"product_id"	INTEGER NOT NULL,
-	"quantity"	INTEGER NOT NULL,
-	"comment"	TEXT,
-	"status"	TEXT NOT NULL,
-	FOREIGN KEY("requisition_id") REFERENCES "requisitions"("id"),
-	FOREIGN KEY("product_id") REFERENCES "inventory"("id"),
-	PRIMARY KEY("id" AUTOINCREMENT)
-	);''')
-    
-    peticion('''CREATE TABLE IF NOT EXISTS "inventory_detail" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"date"	BLOB NOT NULL,
-	"type"	TEXT NOT NULL,
-	"product_id"	INTEGER NOT NULL,
-	"quantity"	INTEGER NOT NULL,
-	"comment"	TEXT,
-	"origin"	TEXT,
-	"origin_id"	INTEGER,
-	FOREIGN KEY("product_id") REFERENCES "inventory"("id"),
-	PRIMARY KEY("id" AUTOINCREMENT)
-	);''')
+	with open(__file__.replace('sql.py', 'database.txt'), "r") as f:
+		content = f.read()
+		for line in content.split(';'):
+			try:
+				petition(line)
+			except Exception as e:
+				logging.info("An error ocurred: ")
+				logging.info(e)
+				logging.info("On instruction: ")
+				logging.info(line)
+				print(e)
     
 
 def table(nombre):
@@ -120,6 +81,4 @@ def peticiontres(peticion):
 	return retorno
 
 if __name__ == '__main__':
-	list = petition(f"SELECT * FROM mantenimientos WHERE anteriorId IS NOT NULL OR siguienteId IS NOT NULL")
-	for i in list:
-		print(f"UPDATE `mantenimientos` SET `anteriorId` = {i[7] if i[7] != None else 'NULL'}, `siguienteId` = {i[8] if i[8] != None else 'NULL'} WHERE `id` = {i[0]};")
+	pass

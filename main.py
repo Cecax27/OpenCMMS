@@ -1,6 +1,6 @@
 from cgitb import text
 from math import prod
-from msilib.schema import ComboBox
+from msilib.scclehema import ComboBox
 import textwrap
 from tkinter import *
 import customtkinter
