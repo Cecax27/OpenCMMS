@@ -2022,6 +2022,7 @@ class Empleados():
             actualFrame = customtkinter.CTkFrame(employerFrame)
             actualFrame.bind('<Button-1>', createFunctionToDisplayEmployer(employer.id, self))
             actualFrame.grid(column=employerList.index(employer)%2, row=int(employerList.index(employer)/2), padx=10, pady=10, sticky = 'news')
+            actualFrame.grid_columnconfigure(0, weight=1)
             
             #Name
             resources.Title(actualFrame, text=employer.name).grid(column=0, row=0, pady=10, padx=10)
@@ -2152,23 +2153,26 @@ class Empleados():
         global mainFrame
         clearMainFrame()
         
-        Label(mainFrame, text='Empleado', bg="#ffffff", font=("Segoe UI", "11", "bold")).place(x=20, y=26)
-        Label(mainFrame, text='Nuevo', bg="#ffffff", font=("Segoe UI", "18", "bold")).place(x=20, y=50)
+        resources.AddTittle(mainFrame, "Empleado", "Nuevo")
+        
+        menu = resources.sectionMenu(mainFrame)
+        menu.addButton("Atrás", goBack, "#555555")
+        menu.addButton("Guardar", lambda: self.saveEmployer(nameString, keyString), colorGreen)
+        
+        form = customtkinter.CTkFrame(mainFrame)
+        form.grid(column = 0, row = 2, sticky = 'news', padx=20, pady=(10,20))
         
         #Var
-        nameString = StringVar(mainFrame)
-        keyString = StringVar(mainFrame)
-        
-        #Save
-        Button(mainFrame, text='Guardar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=lambda: self.saveEmployer(nameString, keyString)).place(x=root.winfo_width()-100, y=35)
+        nameString = StringVar(form)
+        keyString = StringVar(form)
         
         #Name
-        Label(mainFrame, text='Nombre',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=40, y=200)
-        Entry(mainFrame, width=20, textvariable=nameString, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=40, y=230)
+        resources.FormLabel(master=form, text='Nombre').grid(column=0, row=0, padx=(10, 0))
+        customtkinter.CTkEntry(master=form, placeholder_text="Nombre", textvariable=nameString).grid(column=1, row=0, pady=10, padx=10)
         
         #Key
-        Label(mainFrame, text='Código',fg="#000000", bg="#ffffff", font=("Segoe UI", "11", "normal")).place(x=40, y=300)
-        Entry(mainFrame, width=20, textvariable=keyString, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorGray, highlightthickness=0, relief=FLAT).place(x=40, y=330)
+        resources.FormLabel(master=form, text='Código').grid(column=0, row=1, padx=(10, 0))
+        customtkinter.CTkEntry(master=form, placeholder_text="Código", textvariable=keyString).grid(column=1, row=1, pady=10, padx=10)
         
         
     def saveEmployer(self, name, key):

@@ -219,6 +219,11 @@ class Metric(customtkinter.CTkLabel):
         super().__init__(master, **kwargs)
         self.configure(font = customtkinter.CTkFont(family = "Segoe UI", size = 36))
         
+class FormLabel(customtkinter.CTkLabel):
+    def __init__(self, master, **kwargs):   
+        super().__init__(master, **kwargs)
+        self.configure(font = customtkinter.CTkFont(family = "Segoe UI", size = 14))
+        
         
 def AddTittle(mainFrame, tittleText, subtittleText = None) -> None:
     frame = customtkinter.CTkFrame(mainFrame)
@@ -227,6 +232,6 @@ def AddTittle(mainFrame, tittleText, subtittleText = None) -> None:
     frame.grid_rowconfigure((0, 1), weight=1)
     customtkinter.CTkLabel(master = frame, text=tittleText,
                            font=("Segoe UI Bold", 16, "bold")
-                           ).grid(row=0, column=1, padx=(20,0), pady=(10,10), sticky='nws')
+                           ).grid(row=0, column=1, padx=(20,0), pady=(10,0 if subtittleText else 10), sticky='nws')
     if(subtittleText):
-        customtkinter.CTkLabel(frame, text=subtittleText, font=("Segoe UI", "10", "bold")).grid(row=1, column=1, padx=(20,0), pady=(20,20), sticky='nws')
+        customtkinter.CTkLabel(frame, text=subtittleText, font=("Segoe UI", 14, "normal")).grid(row=1, column=1, padx=(20,0), pady=(0,10), sticky='nws')
