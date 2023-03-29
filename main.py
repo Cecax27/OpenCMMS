@@ -2189,7 +2189,7 @@ class Empleados():
         self.displayEmployer(newEmployer.id)
 
 def func_displayRequisition(id, object):
-    return lambda event: goNext(lambda: object.parent.inventory.displayRequisition(id))
+    return lambda *event: goNext(lambda: object.parent.inventory.displayRequisition(id))
 
 def func_displayProduct(id, object):
     return lambda event: goNext(lambda: object.parent.inventory.displayProduct(id))
@@ -2417,25 +2417,26 @@ class Inventory():
         
         requisitionsList = inventory.getRequisitions(quantity=40, order='date')
         
-        requisitionsFrame = ScrollableFrame(mainFrame, x=20, y=150, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-180, bg=colorBackground)
-        requisitionsFrame.place(x=0, y=0)
+        requisitionsFrame = customtkinter.CTkScrollableFrame(mainFrame)
+        requisitionsFrame.grid(column = 0, row = 2, padx=20, pady=(10,20), sticky = 'news')
         
-        Label(mainFrame, text='Id', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=20, y=120)
-        Label(mainFrame, text='Fecha', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=90, y=120)
-        Label(mainFrame, text='Estado', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=270, y=120)
-        Label(mainFrame, text='Descripción', bg=colorBackground, font=("Segoe UI", "10", "bold")).place(x=370, y=120)
+        titlesFrame = customtkinter.CTkFrame(requisitionsFrame)
+        titlesFrame.grid(column = 0, columnspan = 5, row = 0, pady=5, padx=5, sticky = 'news')
+        customtkinter.CTkLabel(titlesFrame, text='', font=("Segoe UI", 14, "bold"), width = 28).grid(column = 0, row = 0, padx=(0,10))
+        customtkinter.CTkLabel(titlesFrame, text='Id', font=("Segoe UI", 14, "bold"), width = 20).grid(column = 1, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Fecha', font=("Segoe UI", 14, "bold"), width = 100).grid(column = 2, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Estado', font=("Segoe UI", 14, "bold"), width = 100).grid(column = 3, row = 0)
+        customtkinter.CTkLabel(titlesFrame, text='Descripción', font=("Segoe UI", 14, "bold")).grid(column = 4, row = 0)
         
-        for req in requisitionsList:
-            reqNumber = requisitionsList.index(req)
-            backColor = colorGray if reqNumber%2==0 else colorDarkGray
-            frame = Frame(requisitionsFrame.scrollableFrame)
-            frame.config(width=mainFrame.winfo_width()-60, height=30, bg=backColor)
-            frame.bind('<Button-1>', func_displayRequisition(req.id, self))
-            frame.pack(pady=1)
-            Label(frame, text=req.id, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=10, y=4)
-            Label(frame, text=datetime.date(req.date).strftime("%d %B %Y"), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=80, y=4)
-            Label(frame, text=req.status.capitalize(), bg=backColor, font=("Segoe UI", "10", "normal")).place(x=260, y=4)
-            Label(frame, text=req.description, bg=backColor, font=("Segoe UI", "10", "normal")).place(x=360, y=4)
+        global imgOpen
+        for reqNumber, req in enumerate(requisitionsList):
+            frame = customtkinter.CTkFrame(requisitionsFrame)
+            frame.grid(column = 0, columnspan = 5, row = reqNumber + 1, pady=5, padx=5, sticky = 'news')
+            customtkinter.CTkButton(frame, image = imgOpen, text = '', width = 24, height = 24, command = func_displayRequisition(req.id, self)).grid(column = 0, row = 0, padx=(0,10))
+            customtkinter.CTkLabel(frame, text=req.id, font=("Segoe UI", 12, "normal"), width=20).grid(column = 1, row = 0)
+            customtkinter.CTkLabel(frame, text=datetime.date(req.date).strftime("%d %B %Y"), font=("Segoe UI", 12, "normal"), width=100).grid(column = 2, row = 0)
+            customtkinter.CTkLabel(frame, text=req.status.capitalize(), font=("Segoe UI", 12, "normal"), width=100).grid(column = 3, row = 0)
+            customtkinter.CTkLabel(frame, text=req.description.replace('\n', ''), font=("Segoe UI", 12, "normal"), justify = 'left', anchor = 'w').grid(column = 4, row = 0)
     
     def displayRequisition(self, id):
         global mainFrame
