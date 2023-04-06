@@ -105,11 +105,11 @@ def clearMainFrame():
     global imgOpen, imgCorrective, imgPreventive, imgIn, imgOut, imgDate, imgPerson, imgDescription, imgMaintenance, imgPlant, imgPreventive2, imgRepeat, imgTask, imgStatus, imgQuantity, imgTime
     imgCorrective = PhotoImage(file='img/corrective.png').subsample(8)
     imgPreventive = PhotoImage(file='img/preventive.png').subsample(8)
-    imgIn = PhotoImage(file='img/in.png')
-    imgOut = PhotoImage(file='img/out.png')
+    imgIn = customtkinter.CTkImage(light_image=Image.open('img/in.png'), size=(32,32))
+    imgOut = customtkinter.CTkImage(light_image=Image.open('img/out.png'), size=(32,32))
     imgDate = PhotoImage(file='img/date.png').subsample(3)
     imgPerson = PhotoImage(file="img/person.png").subsample(3)
-    imgDescription = PhotoImage(file="img/description.png").subsample(3)
+    imgDescription = customtkinter.CTkImage(light_image=Image.open("img/description.png"), size=(32,32))
     imgMaintenance = PhotoImage(file="img/maintenance.png").subsample(3)
     imgPlant = PhotoImage(file="img/plant.png").subsample(3)
     imgPreventive2 = PhotoImage(file="img/preventive_2.png").subsample(3)
@@ -2291,30 +2291,32 @@ class Inventory():
         info.addData("Tiempo estimado para agotarse", str(product.calculateOutputs()*product.quantity)+' días', imgTime)
         info.addData("Marca", product.brand, imgDescription)
         info.addData("Modelo", product.model, imgDescription)
-        
             
         #Movements
-        Label(mainFrame, text='Movimientos de inventario',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=20, y=220)
+        bodyFrame = customtkinter.CTkFrame(mainFrame)
+        bodyFrame.grid_columnconfigure(0, weight=1)
+        bodyFrame.grid_rowconfigure(1, weight=1)
+        bodyFrame.grid(column=0, row=3, padx=20, pady=(10,20), sticky= 'news')
+        customtkinter.CTkLabel(bodyFrame, text='Movimientos de inventario', font=("Segoe UI", 11, "bold")).grid(column=0, row=0)
         
-        movementsFrame = ScrollableFrame(mainFrame, width=mainFrame.winfo_width()-40, height=mainFrame.winfo_height()-200, x=20, y=250, bg=colorBackground)
-        movementsFrame.place(x=20, y=230)
+        movementsFrame = customtkinter.CTkScrollableFrame(bodyFrame)
+        movementsFrame.grid_columnconfigure(0, weight=1)
+        movementsFrame.grid(column=0, row=1, padx=0, pady=0, sticky='news')
         
-        for mov in product.movements:
-            movNumber = product.movements.index(mov)
-            backColor = colorGray if movNumber%2==0 else colorDarkGray
-            productFrame = Frame(movementsFrame.scrollableFrame)
-            productFrame.config(bg=backColor, highlightthickness=0, width=root.winfo_width()-80, height=70)
-            productFrame.pack(pady=1)
+        global imgIn, imgOut
+        for index, mov in enumerate(product.movements):
+            productFrame = customtkinter.CTkFrame(movementsFrame)
+            productFrame.grid(column=0, row=index, sticky='we', pady=5)
             #Type
-            Label(productFrame, image=imgIn if mov.type == inventory.INPUT else imgOut, bd=0, width=40, height=40, bg=backColor).place(x=15, y=15)
+            customtkinter.CTkLabel(productFrame, image=imgIn if mov.type == inventory.INPUT else imgOut, text='').grid(column=0, row=0, rowspan=2, pady=5, padx=5)
             #Date
-            Label(productFrame, text=datetime.date(mov.date).strftime('%d/%m/%Y'), fg='#000000', bg=backColor, font=("Segoe UI", "10", "normal")).place(x=65, y=10)
+            customtkinter.CTkLabel(productFrame, text=datetime.date(mov.date).strftime('%d/%m/%Y'), font=("Segoe UI", 14, "normal")).grid(column=1, row=0, padx=5)
             #Quantity
-            Label(productFrame, text='Cantidad: '+str(mov.quantity), fg='#000000', bg=backColor, font=("Segoe UI", "10", "normal")).place(x=65, y=35)
+            customtkinter.CTkLabel(productFrame, text='Cantidad: '+str(mov.quantity), font=("Segoe UI", 14, "normal")).grid(column=1, row=1)
             #Origin
-            Label(productFrame, text=(mov.origin+' '+str(mov.origin_id)) if mov.origin != None else 'Movimiento del usuario', fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal")).place(x=200, y=10)
+            customtkinter.CTkLabel(productFrame, text=(mov.origin+' '+str(mov.origin_id)) if mov.origin != None else 'Movimiento del usuario', font=("Segoe UI",14, "normal")).grid(column=2, row=0)
             #Comment
-            Label(productFrame, text=mov.comment, fg='#4d4d4d', bg=backColor, font=("Segoe UI", "9", "normal"), wraplength=600, justify=LEFT).place(x=200, y=35)
+            customtkinter.CTkLabel(productFrame, text=mov.comment, font=("Segoe UI", 14, "normal"), wraplength=600, justify=LEFT).grid(column=2, row=1)
             
             
     def newInputInventory(self, product):
@@ -2661,25 +2663,19 @@ class Inventory():
         return True
     
     def newRequisition(self, requisition = None):
-        self.window = Toplevel()
-        self.window.state('zoomed')
-        self.window.title('Requisición nueva' if requisition == None else 'Editar requisición')
+        global mainFrame
+        clearMainFrame()
         
-        self.window.update()
-        mainframe = Frame(self.window)
-        mainframe.config(bg=colorBackground, width=self.window.winfo_width(), height=self.window.winfo_height())
-        mainframe.pack()
-        
-        resources.AddTittle(mainframe, "Requisición", "nueva" if requisition == None else requisition.id)
-        menu = resources.sectionMenu(mainframe)
+        resources.AddTittle(mainFrame, "Requisición", "nueva" if requisition == None else requisition.id)
+        menu = resources.sectionMenu(mainFrame)
         menu.addButton("Atrás", goBack, "#555555")
         menu.addButton("Guardar", self.saveRequisition)
         menu.addButton("Nuevo producto", self.newProduct, colorGreen)
         
         #Var
-        self.searchString = StringVar(mainframe)
-        descriptionString = StringVar(mainframe)
-        self.quantity = StringVar(mainframe)
+        self.searchString = StringVar(mainFrame)
+        descriptionString = StringVar(mainFrame)
+        self.quantity = StringVar(mainFrame)
         
         if requisition == None:
             self.requisition = inventory.Requisition()
@@ -2691,7 +2687,7 @@ class Inventory():
         
         
         #Search
-        search = Frame(mainframe)
+        search = Frame(mainFrame)
         search.config(bg=colorWhite, width=(root.winfo_width()/2)-40, height=30)
         search.place(x=20 , y=130)
         global searchImg 
@@ -2703,30 +2699,30 @@ class Inventory():
         
         #Products table
         tableWidth = int(((root.winfo_width()/2)-40)/4)
-        self.productsTable = crearTabla(['Nombre', 'Descripción', 'Marca', 'Modelo'], [1,], [tableWidth,tableWidth,tableWidth,tableWidth], [['','','',''],], mainframe, 4, '' )
+        self.productsTable = crearTabla(['Nombre', 'Descripción', 'Marca', 'Modelo'], [1,], [tableWidth,tableWidth,tableWidth,tableWidth], [['','','',''],], mainFrame, 4, '' )
         self.productsTable.place(x=20, y=170)
         
         #Coment
-        Label(mainframe, text='Comentario',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=290)
-        self.comment = Text(mainframe, width=int(((root.winfo_width()/2)-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT, height=3)
+        Label(mainFrame, text='Comentario',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=290)
+        self.comment = Text(mainFrame, width=int(((root.winfo_width()/2)-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT, height=3)
         self.comment.place(x=20, y=320)
         
         #Quantity
-        Label(mainframe, text='Cantidad',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=400)
-        Entry(mainframe, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT).place(x=20, y=430)
+        Label(mainFrame, text='Cantidad',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=400)
+        Entry(mainFrame, width=20, textvariable=self.quantity, font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT).place(x=20, y=430)
         
         #Add product
-        Button(mainframe, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToRequisition).place(x=300, y=420)
+        Button(mainFrame, text='+ Agregar',font=("Segoe UI", "9", "normal"), bg=colorBlue, fg="#ffffff", highlightthickness=0, borderwidth=2, relief=FLAT, command=self.addProductToRequisition).place(x=300, y=420)
         
         #Products
-        Label(mainframe, text='Productos',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=root.winfo_width()/2, y=100)
+        Label(mainFrame, text='Productos',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "bold")).place(x=root.winfo_width()/2, y=100)
         
-        self.productsFrame = ScrollableFrame(mainframe, width=int(root.winfo_width()/2-40), height=300, x=root.winfo_width()/2, y=130, bg=colorBackground)
+        self.productsFrame = ScrollableFrame(mainFrame, width=int(root.winfo_width()/2-40), height=300, x=root.winfo_width()/2, y=130, bg=colorBackground)
         self.productsFrame.place(x=root.winfo_width()/2, y=130)
         
         #Requisition Comment
-        Label(mainframe, text='Comentario',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=480)
-        self.requisitionComment = Text(mainframe, width=int(((root.winfo_width())-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT, height=6)
+        Label(mainFrame, text='Comentario',fg="#000000", bg=colorBackground, font=("Segoe UI", "11", "normal")).place(x=20, y=480)
+        self.requisitionComment = Text(mainFrame, width=int(((root.winfo_width())-40)/7), font=("Segoe UI", "10", "normal"), foreground="#222222", background=colorWhite, highlightthickness=0, relief=FLAT, height=6)
         self.requisitionComment.place(x=20, y=510)
         
         if requisition != None:

@@ -133,26 +133,21 @@ class sectionNavigation:
         
 class sectionInfo:
     def __init__(self, master, backgroundColor = "#f2f2f2", foregroundColor = "#000000") -> None:
-        master.update()
-        self.backgroundColor = backgroundColor
-        self.foregroundColor = foregroundColor
-        self.width = int(master.winfo_width()-40)
-        self.backgroundFrame = Frame(master)
-        self.backgroundFrame.config(width=self.width, bg = self.backgroundColor)
-        self.backgroundFrame.place(x=0, y=120)
+        self.backgroundFrame = customtkinter.CTkFrame(master)
+        self.backgroundFrame.grid_columnconfigure([0,1], weight=1)
+        self.backgroundFrame.grid(column=0, row=2, pady=(10,0), padx=20, sticky='new')
         self.data = []
 
     def addData(self, tittle, data, image, large = False):
-        dataFrame = Frame(self.backgroundFrame)
-        dataFrame.config(width=self.width/2, bg=self.backgroundColor)
+        dataFrame = customtkinter.CTkFrame(self.backgroundFrame)
         if large:
             self.data.append(True)
-            dataFrame.grid(row=int(len(self.data)/2), column=0,columnspan=2,  sticky='wne', pady=1, padx=20)
+            dataFrame.grid(row=int(len(self.data)/2), column=0,columnspan=2,  sticky='wne', pady=5, padx=20)
         else:
-            dataFrame.grid(row=int(len(self.data)/2), column=int(len(self.data)%2), sticky='wne', pady=1, padx=20)
-        Label(dataFrame, image=image, width=25, height=25, anchor='n', bg=self.backgroundColor).grid(column=0, row=0, sticky='n')
-        Label(dataFrame, text=tittle, bg=self.backgroundColor, font=("Segoe UI", "11", "bold")).grid(column=1, row=0)
-        Label(dataFrame, text=data, bg=self.backgroundColor, font=("Segoe UI", "11", "normal")).grid(column=2, row=0)
+            dataFrame.grid(row=int(len(self.data)/2), column=int(len(self.data)%2), sticky='wne', pady=5, padx=20)
+        customtkinter.CTkLabel(master = dataFrame, image=image, text='', width=25, height=25, anchor='n').grid(column=0, row=0, sticky='n')
+        customtkinter.CTkLabel(master = dataFrame, text=tittle, font=("Segoe UI", 11, "bold")).grid(column=1, row=0)
+        customtkinter.CTkLabel(dataFrame, text=data, font=("Segoe UI", 11, "normal")).grid(column=2, row=0)
         self.data.append(dataFrame)
         
 class SearchBar:
@@ -226,6 +221,8 @@ class FormLabel(customtkinter.CTkLabel):
         
         
 def AddTittle(mainFrame, tittleText, subtittleText = None) -> None:
+    mainFrame.grid_rowconfigure(2, weight=0)
+    mainFrame.grid_rowconfigure(3, weight=1)
     frame = customtkinter.CTkFrame(mainFrame)
     frame.grid(column=0, row=0, padx=(20,20), pady=(20,10), sticky='new')
     frame.grid_columnconfigure(1, weight=1)
